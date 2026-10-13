@@ -41,6 +41,8 @@ namespace FasterGameLoading
             ModContentLoaderTexture2D_LoadTexture_Patch.StartPreloadCachedTextures();
             // 背景依載入順序預讀原始貼圖，主執行緒載入貼圖時不必等磁碟 I/O
             TexturePrefetcher.Start();
+            // 背景預先解碼原版音效，主執行緒解析音效時直接命中快取
+            CoreSoundPrewarmer.Start();
             StartCleanupInvalidImageOptCaches();
 
             // 補丁的 Prepare 與延遲視覺管線共用同一份定案值，執行期改設定不會讓兩者分歧。

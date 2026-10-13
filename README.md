@@ -47,7 +47,7 @@ With the default settings, mod content, graphics, icons and static atlases are r
 Enabled by default:
 
 - **Load mod content early**: Processes pending mod content during idle loading gaps before RimWorld's normal `ReloadContentInt` pass reaches those mods. It starts only after every mod constructor has run (at `LoadModXML`), so FGL's and other mods' Harmony patches already apply to early-loaded content. It stops once `PlayDataLoader.Loaded` is true and does not restart on language changes. The frame budget is checked between mods, so one large mod can still take a long frame. Texture byte preloading is skipped when Graphics Settings+ or Image Opt is active; bytes already read on the main thread are not prefetched again.
-- **Multi-threaded preloading**: Loads XML assets in parallel while preserving RimWorld's original load-folder override order. With Hyperdrive, `Defs/` XML loading is left to Hyperdrive. A background thread also reads original texture files into memory in the order mods load them, holding at most 256 MB at a time, so the main thread does not wait on disk reads while loading textures. Files the main thread skips are released, and the rest is freed when startup finishes. This is skipped when Graphics Settings+ or Image Opt loads textures. On RimWorld 1.7 this texture read-ahead is not used: RimWorld 1.7 opens texture files itself with its own prefetcher, so bytes read ahead would never be taken.
+- **Multi-threaded preloading**: Loads XML assets in parallel while preserving RimWorld's original load-folder override order. With Hyperdrive, `Defs/` XML loading is left to Hyperdrive. A background thread also reads original texture files into memory in the order mods load them, holding at most 256 MB at a time, so the main thread does not wait on disk reads while loading textures. Files the main thread skips are released, and the rest is freed when startup finishes. This is skipped when Graphics Settings+ or Image Opt loads textures. On RimWorld 1.7 this texture read-ahead is not used: RimWorld 1.7 opens texture files itself with its own prefetcher, so bytes read ahead would never be taken. On RimWorld 1.7 this option instead decodes the vanilla sounds in the background; see [RimWorld 1.7](#rimworld-17).
 - **Type lookup cache**: Warms full type names before XML parsing and remembers resolved names across sessions. It follows RimWorld's assembly search order; full names that differ only in letter case are left to RimWorld's case-insensitive lookup so the same type is chosen. It refreshes when the mod list or any game/mod assembly changes, and falls back to RimWorld's lookup for stale entries. Harmony `AccessTools.TypeByName` keeps a separate per-session cache. Each assembly's types are listed once and shared with the `AccessTools.AllTypes` cache, which is rebuilt when an assembly is added or a dynamic assembly defines new types. Changes take effect after restarting the game.
 - **Trim static atlases**: RimWorld packs each static atlas into a power-of-two height and doubles that height when the first attempt does not fit, so large atlases are often half empty rows. Each atlas keeps one empty row per mipmap level, with its height rounded up so every mip level is a multiple of 8 pixels for GPU compression. Every texture keeps its pixel position. Applies to RimWorld's baking and to **Adaptive atlas baking**. Changes take effect after restarting the game.
 - **Skip duplicate atlas textures**: RimWorld queues a minifiable building's texture for the Building, Item and Misc atlases. Item and Misc copies are skipped when the texture is also queued for Building and its mask state is consistent across all queued groups. Copies with conflicting mask states are preserved so cross-group lookup cannot select the wrong mask. RimWorld's "found in another atlas group" warning is silenced for removed copies only. Changes take effect after restarting the game.
@@ -73,6 +73,24 @@ Manual tool:
 > **Delay graphic and icon loading** is an advanced option. If you see texture or icon timing issues, disable it first.
 > Downscaled texture cache can be cleared from the mod settings.
 > Translations are provided for English, Simplified Chinese, Traditional Chinese and Russian. Other languages, and keys missing from a translation, fall back to English through RimWorld's own translation lookup, so with Dev Mode on they show RimWorld's pseudo-translated (accented) English, its marker for untranslated text.
+
+## RimWorld 1.7
+
+RimWorld 1.7 runs on a new engine (Waylith on .NET 10) instead of Unity and Mono. It already prefetches mod textures and caches compressed atlases on disk, so the 1.7 build of this mod differs from the 1.6 build:
+
+- **Vanilla sound prewarm** (new, part of **Multi-threaded preloading**): RimWorld 1.7 decodes every vanilla sound file one by one on the main thread the first time its sound definition is resolved, about 4 seconds in total, and its own prefetcher does not cover these files. When the mod starts, a background task decodes all vanilla sound files on up to 4 threads into the engine's resource cache, while the main thread is still parsing XML, so resolving sound definitions later only finds them in the cache. It uses an internal engine method; if a game update removes it, the prewarm is skipped and RimWorld loads the sounds as before. It decodes all vanilla sound files, including ones no sound definition uses.
+- **Texture read-ahead** is not used; RimWorld 1.7 reads textures with its own prefetcher.
+- **Faster atlas compression** is not available; RimWorld 1.7 has no matching compression step.
+
+Measured on RimWorld 1.7 with only the Core game active (3 runs each, seconds from process start; "after the main menu" is the deferred work logged by **Verbose logging**):
+
+| Setup | To the main menu | After the main menu | Total |
+| --- | --- | --- | --- |
+| Vanilla | 16.8 | — | 16.8 |
+| Default settings, without the sound prewarm | 13.3 | +3.8 | 17.1 |
+| Default settings, with the sound prewarm | 14.1 | +0.0 | 14.1 |
+
+Without the prewarm, deferring sound resolution only moved the decoding to after the main menu. With it, sounds are ready when the main menu appears and total startup is about 3 seconds shorter. Reaching the main menu takes slightly longer because the prewarm shares the CPU with startup. Larger mod lists have not been measured on 1.7 yet.
 
 ## Where the Time Is Saved
 
