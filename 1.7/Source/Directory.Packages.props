@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <MeziantouAnalysisMode>all-warnings</MeziantouAnalysisMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Krafs.Publicizer" Version="2.3.2" />
+    <PackageVersion Include="Krafs.Rimworld.Ref" Version="1.6.4871" />
+    <PackageVersion Include="Lib.Harmony" Version="2.4.2" />
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.205" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="NUnit" Version="4.6.1" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="6.3.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.32.0.713" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,34 @@
+using System.Collections.Generic;
+using HarmonyLib;
+using Verse;
+
+namespace FasterGameLoading
+{
+    /// <summary>
+    /// 攔截 ModContentPack.ReloadContentInt，避免已被提早載入的 Mod 重複載入。
+    /// </summary>
+    [HarmonyPatch(typeof(ModContentPack), "ReloadContentInt")]
+    public static class ModContentPack_ReloadContentInt_Patch
+    {
+        // loadedMods 僅在主執行緒存取。
+        internal static readonly HashSet<ModContentPack> loadedMods = new HashSet<ModContentPack>();
+        static ModContentPack_ReloadContentInt_Patch()
+        {
+            SessionLifecycle.On(LifecyclePhase.LanguageReloading, () => loadedMods.Clear());
+        }
+
+        public static bool Prefix(ModContentPack __instance)
+        {
+            if (UnityData.IsInMainThread)
+            {
+                MainThreadTextureLoader.Drain();
+            }
+            return !loadedMods.Contains(__instance);
+        }
+
+        public static void Postfix(ModContentPack __instance)
+        {
+            loadedMods.Add(__instance);
+        }
+    }
+}

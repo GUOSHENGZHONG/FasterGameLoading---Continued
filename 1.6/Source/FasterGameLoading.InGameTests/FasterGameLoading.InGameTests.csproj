@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    遊戲內整合測試（RimTest Redux）。產出的 DLL 放在 Mod/ 這個開發用附屬 mod，
+    不進 FGL 本體的 Assemblies，玩家版本因此不會對 RimTestRedux.dll 產生硬相依。
+    Source/ 已被 _PublisherPlus.xml 排除，不會上傳到工作坊。
+    未加入 FasterGameLoading.sln：建置需要本機已訂閱 RimTest Redux 與 ilyvion's Laboratory。
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net481</TargetFramework>
+    <RootNamespace>FasterGameLoading.InGameTests</RootNamespace>
+    <AssemblyName>FasterGameLoading.InGameTests</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <OutputPath>Mod\Assemblies\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>portable</DebugType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <WorkshopDir>$(MSBuildThisFileDirectory)..\..\..\..\..\..\..\workshop\content\294100\</WorkshopDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Krafs.Rimworld.Ref" />
+    <PackageReference Include="Lib.Harmony">
+      <ExcludeAssets>runtime</ExcludeAssets>
+      <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 直接參考 Assemblies/ 裡遊戲實際載入的 DLL，不用 ProjectReference：否則建置測試會順帶重建並覆寫已提交的 FGL DLL。 -->
+    <Reference Include="FasterGameLoading">
+      <HintPath>..\..\Assemblies\FasterGameLoading.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="RimTestRedux">
+      <HintPath>$(WorkshopDir)3762405308\1.6\Assemblies\RimTestRedux.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0ilyvion.Laboratory">
+      <HintPath>$(WorkshopDir)3296362231\1.6\Assemblies\0ilyvion.Laboratory.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 測試要直接讀取 FGL、原版與 RimTest Redux 的非公開狀態；執行期由 IgnoresAccessChecksTo 放行。 -->
+    <Publicize Include="Assembly-CSharp" />
+    <Publicize Include="FasterGameLoading" />
+    <Publicize Include="RimTestRedux" />
+  </ItemGroup>
+</Project>

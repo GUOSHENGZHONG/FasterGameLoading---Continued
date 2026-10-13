@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <!-- RimWorld 1.7 的遊戲組件（Waylith／.NET 10）皆以 net10.0 編譯 -->
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>FasterGameLoading</RootNamespace>
+    <AssemblyName>FasterGameLoading</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <RimWorldDir>$(MSBuildThisFileDirectory)..\..\..\..\</RimWorldDir>
+    <WorkshopDir>$(MSBuildThisFileDirectory)..\..\..\..\..\..\workshop\content\294100\</WorkshopDir>
+    <!-- MA0159 建議改用 Order()，Order() 要 .NET 7 起才有；維持與 1.6 版原始碼一致，不採用。 -->
+    <NoWarn>$(NoWarn);MA0159</NoWarn>
+    <!-- 遊戲只載入 Assemblies 內的 DLL，不需要 .deps.json -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+  <!-- Debug configuration -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+  <!-- Release configuration -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <Optimize>true</Optimize>
+    <OutputPath>..\Assemblies\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+  <Target Name="CopyAssemblies" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="..\Assemblies\" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="..\Assemblies\" Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+  </Target>
+  <!-- 1.7 沒有 NuGet 參考套件：直接參考遊戲根目錄的組件，以及 Harmony 工作坊版的 1.7 組件。 -->
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(RimWorldDir)Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityStubs">
+      <HintPath>$(RimWorldDir)UnityStubs.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Waylith">
+      <HintPath>$(RimWorldDir)Waylith.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(WorkshopDir)2009463077\1.7\Assemblies\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Meziantou.Analyzer">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <PropertyGroup>
+    <!-- Disable automatic generation of assembly attributes -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableNETAnalyzers>False</EnableNETAnalyzers>
+  </PropertyGroup>
+  <ItemGroup>
+    <Publicize Include="Assembly-CSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="FasterGameLoading.Tests\**" />
+    <EmbeddedResource Remove="FasterGameLoading.Tests\**" />
+    <None Remove="FasterGameLoading.Tests\**" />
+    <Compile Remove="FasterGameLoading.InGameTests\**" />
+    <EmbeddedResource Remove="FasterGameLoading.InGameTests\**" />
+    <None Remove="FasterGameLoading.InGameTests\**" />
+  </ItemGroup>
+</Project>

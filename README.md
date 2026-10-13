@@ -1,6 +1,6 @@
 # Faster Game Loading - Continued
 
-[![RimWorld 1.6](https://img.shields.io/badge/RimWorld-1.6-brightgreen.svg)](http://rimworldgame.com/)
+[![RimWorld 1.6 | 1.7](https://img.shields.io/badge/RimWorld-1.6%20%7C%201.7-brightgreen.svg)](http://rimworldgame.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Languages](https://img.shields.io/badge/languages-EN%20%7C%20Traditional%20Chinese%20%7C%20Simplified%20Chinese%20%7C%20RU-orange.svg)
 
@@ -11,7 +11,7 @@ Original mod by [Taranchuk](https://github.com/Taranchuk/FasterGameLoading); thi
 ## Installation
 
 > [!IMPORTANT]
-> Requires RimWorld 1.6 and [Harmony](https://github.com/pardeike/HarmonyRimWorld/releases/latest). Load this mod after Harmony.
+> Requires RimWorld 1.6 or 1.7 and [Harmony](https://github.com/pardeike/HarmonyRimWorld/releases/latest). Load this mod after Harmony.
 
 - **Steam Workshop**: subscribe on the [Workshop page](https://steamcommunity.com/sharedfiles/filedetails/?id=3652938473).
 - **Manual**: download or clone this repository into your `RimWorld/Mods/` folder, then enable **Faster Game Loading - Continued** in the in-game mod list.
@@ -47,7 +47,7 @@ With the default settings, mod content, graphics, icons and static atlases are r
 Enabled by default:
 
 - **Load mod content early**: Processes pending mod content during idle loading gaps before RimWorld's normal `ReloadContentInt` pass reaches those mods. It starts only after every mod constructor has run (at `LoadModXML`), so FGL's and other mods' Harmony patches already apply to early-loaded content. It stops once `PlayDataLoader.Loaded` is true and does not restart on language changes. The frame budget is checked between mods, so one large mod can still take a long frame. Texture byte preloading is skipped when Graphics Settings+ or Image Opt is active; bytes already read on the main thread are not prefetched again.
-- **Multi-threaded preloading**: Loads XML assets in parallel while preserving RimWorld's original load-folder override order. With Hyperdrive, `Defs/` XML loading is left to Hyperdrive. A background thread also reads original texture files into memory in the order mods load them, holding at most 256 MB at a time, so the main thread does not wait on disk reads while loading textures. Files the main thread skips are released, and the rest is freed when startup finishes. This is skipped when Graphics Settings+ or Image Opt loads textures.
+- **Multi-threaded preloading**: Loads XML assets in parallel while preserving RimWorld's original load-folder override order. With Hyperdrive, `Defs/` XML loading is left to Hyperdrive. A background thread also reads original texture files into memory in the order mods load them, holding at most 256 MB at a time, so the main thread does not wait on disk reads while loading textures. Files the main thread skips are released, and the rest is freed when startup finishes. This is skipped when Graphics Settings+ or Image Opt loads textures. On RimWorld 1.7 this texture read-ahead is not used: RimWorld 1.7 opens texture files itself with its own prefetcher, so bytes read ahead would never be taken.
 - **Type lookup cache**: Warms full type names before XML parsing and remembers resolved names across sessions. It follows RimWorld's assembly search order; full names that differ only in letter case are left to RimWorld's case-insensitive lookup so the same type is chosen. It refreshes when the mod list or any game/mod assembly changes, and falls back to RimWorld's lookup for stale entries. Harmony `AccessTools.TypeByName` keeps a separate per-session cache. Each assembly's types are listed once and shared with the `AccessTools.AllTypes` cache, which is rebuilt when an assembly is added or a dynamic assembly defines new types. Changes take effect after restarting the game.
 - **Trim static atlases**: RimWorld packs each static atlas into a power-of-two height and doubles that height when the first attempt does not fit, so large atlases are often half empty rows. Each atlas keeps one empty row per mipmap level, with its height rounded up so every mip level is a multiple of 8 pixels for GPU compression. Every texture keeps its pixel position. Applies to RimWorld's baking and to **Adaptive atlas baking**. Changes take effect after restarting the game.
 - **Skip duplicate atlas textures**: RimWorld queues a minifiable building's texture for the Building, Item and Misc atlases. Item and Misc copies are skipped when the texture is also queued for Building and its mask state is consistent across all queued groups. Copies with conflicting mask states are preserved so cross-group lookup cannot select the wrong mask. RimWorld's "found in another atlas group" warning is silenced for removed copies only. Changes take effect after restarting the game.
@@ -60,7 +60,7 @@ Disabled by default:
 
 - **Delay graphic and icon loading**: Moves some non-essential visual and icon work to batched processing after the startup callbacks; it begins while the main menu is shown, without waiting for a save to load. Essential categories such as furniture are chosen after Def references resolve. RimWorld's `ResolveIcon` handles icons before deferred atlas baking. Changes take effect after restarting the game.
 - **Adaptive atlas baking**: Only takes effect together with **Delay graphic and icon loading**. The deferred static atlases are baked while the main menu is shown, several per frame until the frame's time budget (50 ms on the main menu, 8 ms in game) is used up. Each batch targets an amount of pixels sized from the measured GPU speed, at least 1024×1024 pixels' worth, so rendering still benefits from batching; the last batch of a group may be smaller, and a batch with a single texture uses that texture directly, so individual atlases can be smaller than 1024×1024. The budget is checked after each atlas, so it is not a hard cap: one large atlas can still take longer in a single frame. Textures queued by other mods while baking is in progress are baked too. Without delayed loading, RimWorld's original baking is used. Known risky race/multi-mask textures are kept out of static atlases. Changes take effect after restarting the game.
-- **Faster atlas compression**: On the CPU path, compresses the baked static atlases with `Texture2D.Compress(highQuality: false)` instead of `true`. The high-quality mode adds dithering and takes longer. GPU compression is unchanged. Changes take effect after restarting the game.
+- **Faster atlas compression** (RimWorld 1.6 only): On the CPU path, compresses the baked static atlases with `Texture2D.Compress(highQuality: false)` instead of `true`. The high-quality mode adds dithering and takes longer. GPU compression is unchanged. Changes take effect after restarting the game. RimWorld 1.7 no longer has this compression step and its `Compress` has no quality switch, so the option is hidden there.
 - **Verbose logging**: Prints debugging messages. If it is already on when the game starts, after the first startup it also logs how long after the main menu appeared the deferred visuals and all deferred work became ready (work finished before the main menu counts as +0.0 s), for example `[FasterGameLoading] Startup timing after the main menu appeared: visuals ready +0.6 s, all deferred work done +3.0 s.` Loading time up to the main menu is not included; mods such as [Loading Progress](https://steamcommunity.com/sharedfiles/filedetails/?id=3535481557) show that. Nothing is logged when the game goes straight into a map without the main menu, and language switches do not log it again.
 
 Manual tool:
@@ -73,6 +73,25 @@ Manual tool:
 > **Delay graphic and icon loading** is an advanced option. If you see texture or icon timing issues, disable it first.
 > Downscaled texture cache can be cleared from the mod settings.
 > Translations are provided for English, Simplified Chinese, Traditional Chinese and Russian. Other languages, and keys missing from a translation, fall back to English through RimWorld's own translation lookup, so with Dev Mode on they show RimWorld's pseudo-translated (accented) English, its marker for untranslated text.
+
+## Where the Time Is Saved
+
+Only the type lookup cache lowers the asymptotic cost. The other features do the same total work as vanilla, but split it across cores, run two kinds of work at the same time, shrink the input, or move work to after the main menu.
+
+Symbols: `T` = types in all loaded assemblies, `U` = distinct type names resolved in a session, `K` = RimWorld's ignored namespace prefixes, `W` = total XML parsing work, `p` = min(CPU cores, 8), `P` = static atlas pixels.
+
+| Feature | Vanilla | Faster Game Loading | Kind of saving |
+| --- | --- | --- | --- |
+| Type lookup cache | `O(U·(K+1)·T)`: each miss asks every assembly with a case-insensitive lookup, which Mono answers by scanning its type table, then retries with each namespace prefix; repeated every startup | `O(T + U)`: one hash table of full names built at startup, then a hash lookup per name; last session's short-name mappings skip the prefix retries | Asymptotic |
+| Multi-threaded preloading | about `W / 2` elapsed: 2 threads per mod, mods one after another | about `W / p` elapsed, bounded below by the largest single file | Constant factor, up to about 4× |
+| Load mod content early | `T_XML + T_content` | about `max(T_XML, T_content)` for the overlapping part | Overlap |
+| Texture file preloading (1.6 only) | `Σ(read + decode)` on the main thread | about `max(Σ read, Σ decode)`, with at most 256 MB read ahead | Overlap |
+| Trim static atlases | `O(P)`, with heights padded to a power of two | `O(P′)`, up to about half the rows removed | Smaller input |
+| Skip duplicate atlas textures | a minifiable building's texture baked up to 3 times | baked once in Building | Smaller input |
+| Downscale textures (manual) | full-size decode and upload | each halving step leaves 1/4 of the pixels | Smaller input |
+| Deferred sounds, delayed graphics and atlas baking | done before the main menu | same work, done after the main menu appears | Off the path to the main menu |
+
+These bounds explain where the savings come from; they do not predict seconds, which depend on how large `T`, `U`, `W` and `P` are for a given mod list. RimWorld already caches resolved type names within a session and resolves the ignored-namespace short names through an exact-case dictionary, so only the lookups that miss those reach the slow path. Deferred work still has to finish; to measure total startup time, add the `Startup timing after the main menu appeared` line from **Verbose logging** to the time it takes to reach the main menu.
 
 ## Compatibility
 
@@ -115,39 +134,35 @@ If loading is still slow:
 ```text
 FasterGameLoading/
 ├── About/                         # Mod metadata, preview, and Workshop id
-├── Assemblies/                    # Compiled DLL
+├── 1.6/                           # RimWorld 1.6 (.NET Framework 4.7.2)
+│   ├── Assemblies/                # Compiled DLL
+│   └── Source/                    # Source for 1.6
+├── 1.7/                           # RimWorld 1.7 (.NET 10)
+│   ├── Assemblies/                # Compiled DLL
+│   └── Source/                    # Source for 1.7, copied from 1.6 and adapted
 ├── LanguageData/                  # Translation XML files (EN, zh-TW, zh-CN, RU)
 ├── SteamDescriptions/             # Steam Workshop description sources
-├── Source/
-│   ├── Core/                      # Mod entry point and startup cleanup
-│   ├── Settings/                  # Settings and cross-session cache data
-│   ├── XMLLoadingCache/           # Parallel XML loading
-│   ├── EarlyModContentLoading/    # Load mod content early and reflection cache
-│   ├── TextureDownscaler/         # Downscale textures and cache loading
-│   ├── AdaptiveAtlasBaking/       # Adaptive atlas baking
-│   ├── StaticAtlasOptimizations/  # Trim, skip duplicates and compress static atlases
-│   ├── DelayGraphicAndIconLoading/# Delay graphic and icon loading
-│   ├── DelaySoundLoading/         # Deferred sound resolution
-│   ├── Compatibility/             # Third-party mod compatibility handling
-│   ├── Language/                  # In-game translation injection
-│   ├── Utilities/                 # Shared helpers
-│   └── FasterGameLoading.Tests/   # NUnit tests
 ├── LICENSE
 └── README.md
 ```
 
 ## Building from Source
 
-The main project targets .NET Framework 4.7.2 and references RimWorld via the [Krafs.Rimworld.Ref](https://www.nuget.org/packages/Krafs.Rimworld.Ref) NuGet package, so no local RimWorld installation is needed to compile. The compiled DLL is written to `Assemblies/`.
+Each game version has its own source tree. RimWorld picks `1.6/` or `1.7/` by the running version, so each build writes its DLL to the `Assemblies/` folder next to its `Source/`. Inside each `Source/`, features are grouped into folders such as `Core/`, `Settings/`, `XMLLoadingCache/`, `EarlyModContentLoading/`, `TextureDownscaler/`, `AdaptiveAtlasBaking/`, `StaticAtlasOptimizations/`, `DelayGraphicAndIconLoading/`, `DelaySoundLoading/`, `Compatibility/`, `Language/` and `Utilities/`, with NUnit tests in `FasterGameLoading.Tests/`.
+
+- **1.6** targets .NET Framework 4.7.2 and references RimWorld via the [Krafs.Rimworld.Ref](https://www.nuget.org/packages/Krafs.Rimworld.Ref) NuGet package, so no local RimWorld 1.6 installation is needed to compile.
+- **1.7** targets .NET 10. RimWorld 1.7 has no reference package yet, so it references the RimWorld 1.7 installation this repository sits in (`Assembly-CSharp.dll`, `UnityStubs.dll`, `Waylith.dll`) and the 1.7 `0Harmony.dll` from the Harmony Workshop item.
 
 ```bash
-dotnet build Source/FasterGameLoading.csproj -c Release
+dotnet build 1.6/Source/FasterGameLoading.csproj -c Release
+dotnet build 1.7/Source/FasterGameLoading.csproj -c Release
 ```
 
-Tests use NUnit on .NET 9:
+Tests use NUnit (.NET 9 for 1.6, .NET 10 for 1.7):
 
 ```bash
-dotnet test Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj --settings test.runsettings
+dotnet test 1.6/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj --settings test.runsettings
+dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj --settings test.runsettings
 ```
 
 ## Credits and License
