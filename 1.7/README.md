@@ -92,7 +92,7 @@ Symbols: `T` = types in all loaded assemblies, `A` = active assemblies, `U` = di
 | Feature | Vanilla | Faster Game Loading | Kind of saving |
 | --- | --- | --- | --- |
 | Type lookup cache | `O(T + U·(K+1)·A)` (assumed): stock .NET answers a case-insensitive lookup from a per-assembly hash table it builds on first use, but each miss still asks every assembly, then retries with each namespace prefix; repeated every startup. This is stock .NET behavior and has not been verified on Waylith's .NET fork; if it still scans the type table, the vanilla cost is `O(U·(K+1)·T)` as on 1.6 | `O(T + U)`: one hash table of full names built at startup, then a hash lookup per name; last session's short-name mappings skip the prefix retries | Fewer lookups per name (asymptotic if Waylith scans) |
-| Multi-threaded preloading (XML) | about `W / 2` elapsed: 2 threads per mod, mods one after another | about `W / p` elapsed, bounded below by the largest single file | Constant factor, up to about 4× |
+| Multi-threaded preloading (XML) | about `W / 3` elapsed: the calling thread plus 2 threads per mod, mods one after another | about `W / p` elapsed, bounded below by the largest single file | Constant factor, small in practice: about 10%–23% faster (about 0.1–0.25 s) with 37 mods, 3,980 XML files and 6 cores |
 | Multi-threaded preloading (vanilla sounds) | `S` on the main thread, one file at a time | about `S / t` on background threads, overlapping XML parsing | Off the main thread, constant factor |
 | Load mod content early | `T_XML + T_content` | about `max(T_XML, T_content)` for the overlapping part | Overlap |
 | Trim static atlases | `O(P)`, with heights padded to a power of two | `O(P′)`, up to about half the rows removed | Smaller input |
