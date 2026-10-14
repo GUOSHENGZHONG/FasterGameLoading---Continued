@@ -4,6 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Languages](https://img.shields.io/badge/languages-EN%20%7C%20Traditional%20Chinese%20%7C%20Simplified%20Chinese%20%7C%20RU-orange.svg)
 
+English | [繁體中文](README.zh-TW.md)
+
 Makes RimWorld reach the main menu faster on large mod lists. This mod reduces startup costs from XML loading, reflection, textures, and atlas work without changing gameplay or save data.
 
 Original mod by [Taranchuk](https://github.com/Taranchuk/FasterGameLoading); this is a maintained fork with compatibility fixes and performance improvements.
@@ -37,15 +39,18 @@ FasterGameLoading/
 ├── 1.6/                           # RimWorld 1.6 (.NET Framework 4.7.2)
 │   ├── Assemblies/                # Compiled DLL
 │   ├── Source/                    # Source for 1.6
-│   └── README.md                  # Documentation for 1.6
+│   ├── README.md                  # Documentation for 1.6 (English)
+│   └── README.zh-TW.md            # Documentation for 1.6 (Traditional Chinese)
 ├── 1.7/                           # RimWorld 1.7 (.NET 10)
 │   ├── Assemblies/                # Compiled DLL
 │   ├── Source/                    # Source for 1.7, copied from 1.6 and adapted
-│   └── README.md                  # Documentation for 1.7
+│   ├── README.md                  # Documentation for 1.7 (English)
+│   └── README.zh-TW.md            # Documentation for 1.7 (Traditional Chinese)
 ├── LanguageData/                  # Translation XML files (EN, zh-TW, zh-CN, RU)
 ├── SteamDescriptions/             # Steam Workshop description sources
 ├── LICENSE
-└── README.md
+├── README.md
+└── README.zh-TW.md
 ```
 
 RimWorld picks `1.6/` or `1.7/` by the running version, so each build writes its DLL to the `Assemblies/` folder next to its `Source/`. Build and test commands are in each version's README.
