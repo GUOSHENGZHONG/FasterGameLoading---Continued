@@ -7,133 +7,131 @@ using RimWorld.Planet;
 using Verse;
 using Verse.Sound;
 
-namespace FasterGameLoading.Tests.DelaySoundLoading
+namespace FasterGameLoading.Tests.DelaySoundLoading;
+[TestFixture]
+public class World_FinalizeInit_PatchTests
 {
-    [TestFixture]
-    public class World_FinalizeInit_PatchTests
+    private static Harmony harmony;
+    private DelayedActions delayedActions;
+    private static Action capturedExecuteWhenFinishedAction;
+
+    private static bool PrefixSkip() => false;
+
+    private static bool MockExecuteWhenFinished(Action action)
     {
-        private static Harmony harmony;
-        private DelayedActions delayedActions;
-        private static Action capturedExecuteWhenFinishedAction;
+        capturedExecuteWhenFinishedAction = action;
+        return false;
+    }
 
-        private static bool PrefixSkip() => false;
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
+    {
+        harmony = new Harmony("FasterGameLoading.Tests.World_FinalizeInit_PatchTests");
 
-        private static bool MockExecuteWhenFinished(Action action)
+        var emitMethod = AccessTools.Method(typeof(FGLLog), "Emit");
+        if (emitMethod != null)
         {
-            capturedExecuteWhenFinishedAction = action;
-            return false;
+            harmony.Patch(emitMethod, prefix: new HarmonyMethod(AccessTools.Method(typeof(World_FinalizeInit_PatchTests), nameof(PrefixSkip))));
         }
 
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+        // Patch LongEventHandler.ExecuteWhenFinished (may fail if ECall, guard with try/catch)
+        try
         {
-            harmony = new Harmony("FasterGameLoading.Tests.World_FinalizeInit_PatchTests");
-
-            var emitMethod = AccessTools.Method(typeof(FGLLog), "Emit");
-            if (emitMethod != null)
+            var execWhenFinished = AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished));
+            if (execWhenFinished != null)
             {
-                harmony.Patch(emitMethod, prefix: new HarmonyMethod(AccessTools.Method(typeof(World_FinalizeInit_PatchTests), nameof(PrefixSkip))));
+                harmony.Patch(execWhenFinished, prefix: new HarmonyMethod(AccessTools.Method(typeof(World_FinalizeInit_PatchTests), nameof(MockExecuteWhenFinished))));
             }
-
-            // Patch LongEventHandler.ExecuteWhenFinished (may fail if ECall, guard with try/catch)
-            try
-            {
-                var execWhenFinished = AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished));
-                if (execWhenFinished != null)
-                {
-                    harmony.Patch(execWhenFinished, prefix: new HarmonyMethod(AccessTools.Method(typeof(World_FinalizeInit_PatchTests), nameof(MockExecuteWhenFinished))));
-                }
-            }
-            catch { }
-
-            var fglModHarmonyProp = typeof(FasterGameLoadingMod).GetProperty(
-                nameof(FasterGameLoadingMod.harmony), BindingFlags.Public | BindingFlags.Static);
-            fglModHarmonyProp?.SetValue(null, new Harmony("FasterGameLoadingMod.WorldFinalizeTestInstance"), index: null);
         }
+        catch { }
 
-        [OneTimeTearDown]
-        public void OneTimeTearDown()
-        {
-            harmony?.UnpatchAll("FasterGameLoading.Tests.World_FinalizeInit_PatchTests");
-        }
+        var fglModHarmonyProp = typeof(FasterGameLoadingMod).GetProperty(
+            nameof(FasterGameLoadingMod.harmony), BindingFlags.Public | BindingFlags.Static);
+        fglModHarmonyProp?.SetValue(null, new Harmony("FasterGameLoadingMod.WorldFinalizeTestInstance"), index: null);
+    }
 
-        [SetUp]
-        public void SetUp()
-        {
-            delayedActions = new DelayedActions();
-            capturedExecuteWhenFinishedAction = null;
-            SoundStarter_Patch.ResetUnpatchedStatus();
+    [OneTimeTearDown]
+    public void OneTimeTearDown()
+    {
+        harmony?.UnpatchAll("FasterGameLoading.Tests.World_FinalizeInit_PatchTests");
+    }
 
-            var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
-            prop?.SetValue(null, delayedActions, index: null);
-        }
+    [SetUp]
+    public void SetUp()
+    {
+        delayedActions = new DelayedActions();
+        capturedExecuteWhenFinishedAction = null;
+        SoundStarter_Patch.ResetUnpatchedStatus();
 
-        [TearDown]
-        public void TearDown()
-        {
-            delayedActions?.ClearQueues();
-            SoundStarter_Patch.ResetUnpatchedStatus();
-            var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
-            prop?.SetValue(null, value: null, index: null);
-        }
+        var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
+        prop?.SetValue(null, delayedActions, index: null);
+    }
 
-        [Test]
-        public void Patch_IsRegisteredForWorldFinalizeInit()
-        {
-            var patch = (HarmonyPatch)System.Attribute.GetCustomAttribute(
-                typeof(World_FinalizeInit_Patch), typeof(HarmonyPatch));
+    [TearDown]
+    public void TearDown()
+    {
+        delayedActions?.ClearQueues();
+        SoundStarter_Patch.ResetUnpatchedStatus();
+        var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
+        prop?.SetValue(null, value: null, index: null);
+    }
 
-            Assert.That(patch, Is.Not.Null);
-            Assert.That(typeof(World_FinalizeInit_Patch).GetMethod("Postfix"), Is.Not.Null);
-        }
+    [Test]
+    public void Patch_IsRegisteredForWorldFinalizeInit()
+    {
+        var patch = (HarmonyPatch)System.Attribute.GetCustomAttribute(
+            typeof(World_FinalizeInit_Patch), typeof(HarmonyPatch));
 
-        [Test]
-        public void Postfix_EnqueuesExecuteWhenFinished_DrainsSubSounds_AndUnpatchesSoundStarter()
-        {
-            var sound1 = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
-            var sound2 = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
-            bool sound1Executed = false;
-            bool sound2Executed = false;
+        Assert.That(patch, Is.Not.Null);
+        Assert.That(typeof(World_FinalizeInit_Patch).GetMethod("Postfix"), Is.Not.Null);
+    }
 
-            delayedActions.EnqueueSubSound(sound1, () => sound1Executed = true);
-            delayedActions.EnqueueSubSound(sound2, () => sound2Executed = true);
+    [Test]
+    public void Postfix_EnqueuesExecuteWhenFinished_DrainsSubSounds_AndUnpatchesSoundStarter()
+    {
+        var sound1 = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
+        var sound2 = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
+        bool sound1Executed = false;
+        bool sound2Executed = false;
 
-            World_FinalizeInit_Patch.Postfix();
+        delayedActions.EnqueueSubSound(sound1, () => sound1Executed = true);
+        delayedActions.EnqueueSubSound(sound2, () => sound2Executed = true);
 
-            Assert.That(capturedExecuteWhenFinishedAction, Is.Not.Null);
+        World_FinalizeInit_Patch.Postfix();
 
-            var unpatchedField = AccessTools.Field(typeof(SoundStarter_Patch), "unpatched");
-            Assert.That((bool)unpatchedField.GetValue(null), Is.False);
+        Assert.That(capturedExecuteWhenFinishedAction, Is.Not.Null);
 
-            capturedExecuteWhenFinishedAction();
+        var unpatchedField = AccessTools.Field(typeof(SoundStarter_Patch), "unpatched");
+        Assert.That((bool)unpatchedField.GetValue(null), Is.False);
 
-            Assert.That(sound1Executed, Is.True);
-            Assert.That(sound2Executed, Is.True);
-            Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(0));
-            Assert.That((bool)unpatchedField.GetValue(null), Is.True);
-        }
+        capturedExecuteWhenFinishedAction();
 
-        [Test]
-        public void Postfix_WhenSubSoundActionThrows_CatchesAndContinuesDrainingAndUnpatches()
-        {
-            var sound1 = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
-            var sound2 = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
-            bool sound2Executed = false;
+        Assert.That(sound1Executed, Is.True);
+        Assert.That(sound2Executed, Is.True);
+        Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(0));
+        Assert.That((bool)unpatchedField.GetValue(null), Is.True);
+    }
 
-            delayedActions.EnqueueSubSound(sound1, () => throw new InvalidOperationException("Failed audio grain"));
-            delayedActions.EnqueueSubSound(sound2, () => sound2Executed = true);
+    [Test]
+    public void Postfix_WhenSubSoundActionThrows_CatchesAndContinuesDrainingAndUnpatches()
+    {
+        var sound1 = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
+        var sound2 = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
+        bool sound2Executed = false;
 
-            World_FinalizeInit_Patch.Postfix();
+        delayedActions.EnqueueSubSound(sound1, () => throw new InvalidOperationException("Failed audio grain"));
+        delayedActions.EnqueueSubSound(sound2, () => sound2Executed = true);
 
-            Assert.That(capturedExecuteWhenFinishedAction, Is.Not.Null);
+        World_FinalizeInit_Patch.Postfix();
 
-            var unpatchedField = AccessTools.Field(typeof(SoundStarter_Patch), "unpatched");
+        Assert.That(capturedExecuteWhenFinishedAction, Is.Not.Null);
 
-            Assert.DoesNotThrow(() => capturedExecuteWhenFinishedAction());
+        var unpatchedField = AccessTools.Field(typeof(SoundStarter_Patch), "unpatched");
 
-            Assert.That(sound2Executed, Is.True);
-            Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(0));
-            Assert.That((bool)unpatchedField.GetValue(null), Is.True);
-        }
+        Assert.DoesNotThrow(() => capturedExecuteWhenFinishedAction());
+
+        Assert.That(sound2Executed, Is.True);
+        Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(0));
+        Assert.That((bool)unpatchedField.GetValue(null), Is.True);
     }
 }

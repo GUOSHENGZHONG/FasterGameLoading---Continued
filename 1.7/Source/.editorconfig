@@ -14,10 +14,6 @@ insert_final_newline = true
 dotnet_diagnostic.IDE0058.severity = none
 # IDE0002: 簡化名稱
 dotnet_diagnostic.IDE0002.severity = error
-# MA0158: 建議改用 System.Threading.Lock。
-# RimWorld 的 Mono mscorlib 雖有此型別，但僅提供 Acquire/Release，
-# 缺少 .NET 9 的 EnterScope/Scope 語意，改用後仍是 Monitor 鎖且會觸發 CS9216，故停用。
-dotnet_diagnostic.MA0158.severity = none
 # MA0141 / MA0142: 建議以模式比對取代 != null / == null。
 # UnityEngine.Object 重載了 == 運算子：已 Destroy 的物件 `== null` 為 true，
 # 但 `is null` 為 false。本專案大量處理 Texture2D 與圖集，套用此修正會取得

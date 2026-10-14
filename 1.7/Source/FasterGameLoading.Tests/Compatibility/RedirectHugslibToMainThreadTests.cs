@@ -1,66 +1,64 @@
 using System;
 using NUnit.Framework;
 
-namespace FasterGameLoading.Tests.Compatibility
+namespace FasterGameLoading.Tests.Compatibility;
+[TestFixture]
+public class RedirectHugslibToMainThreadTests
 {
-    [TestFixture]
-    public class RedirectHugslibToMainThreadTests
+    [Test]
+    public void Prepare_IsDisabledWhenDelayedGraphicLoadingIsDisabled()
     {
-        [Test]
-        public void Prepare_IsDisabledWhenDelayedGraphicLoadingIsDisabled()
+        var previous = FasterGameLoadingSettings.DelayGraphicLoading;
+        try
         {
-            var previous = FasterGameLoadingSettings.DelayGraphicLoading;
-            try
-            {
-                FasterGameLoadingSettings.DelayGraphicLoading = false;
+            FasterGameLoadingSettings.DelayGraphicLoading = false;
 
-                Assert.That(RedirectHugslibToMainThread.Prepare(), Is.False);
-            }
-            finally
-            {
-                FasterGameLoadingSettings.DelayGraphicLoading = previous;
-            }
+            Assert.That(RedirectHugslibToMainThread.Prepare(), Is.False);
         }
-
-        [Test]
-        public void Prepare_WhenDelayGraphicLoadingIsTrue_MatchesTargetMethodPresence()
+        finally
         {
-            var previous = FasterGameLoadingSettings.DelayGraphicLoading;
-            try
-            {
-                FasterGameLoadingSettings.DelayGraphicLoading = true;
-
-                Assert.That(
-                    RedirectHugslibToMainThread.Prepare(),
-                    Is.EqualTo(RedirectHugslibToMainThread.targetMethod != null));
-            }
-            finally
-            {
-                FasterGameLoadingSettings.DelayGraphicLoading = previous;
-            }
+            FasterGameLoadingSettings.DelayGraphicLoading = previous;
         }
+    }
 
-        [Test]
-        public void TargetMethod_ReturnsTheCachedOptionalHugsLibMethod()
+    [Test]
+    public void Prepare_WhenDelayGraphicLoadingIsTrue_MatchesTargetMethodPresence()
+    {
+        var previous = FasterGameLoadingSettings.DelayGraphicLoading;
+        try
         {
+            FasterGameLoadingSettings.DelayGraphicLoading = true;
+
             Assert.That(
-                RedirectHugslibToMainThread.TargetMethod(),
-                Is.SameAs(RedirectHugslibToMainThread.targetMethod));
+                RedirectHugslibToMainThread.Prepare(),
+                Is.EqualTo(RedirectHugslibToMainThread.targetMethod != null));
         }
-
-        [Test]
-        public void Prefix_ReturnsFalseAndQueuesAction()
+        finally
         {
-            var dummyInstance = new object();
-            var result = RedirectHugslibToMainThread.Prefix(dummyInstance);
-
-            Assert.That(result, Is.False);
+            FasterGameLoadingSettings.DelayGraphicLoading = previous;
         }
+    }
 
-        [Test]
-        public void OnDefsLoaded_ThrowsNotImplementedExceptionAsStub()
-        {
-            Assert.Throws<NotImplementedException>(() => RedirectHugslibToMainThread.OnDefsLoaded(new object()));
-        }
+    [Test]
+    public void TargetMethod_ReturnsTheCachedOptionalHugsLibMethod()
+    {
+        Assert.That(
+            RedirectHugslibToMainThread.TargetMethod(),
+            Is.SameAs(RedirectHugslibToMainThread.targetMethod));
+    }
+
+    [Test]
+    public void Prefix_ReturnsFalseAndQueuesAction()
+    {
+        var dummyInstance = new object();
+        var result = RedirectHugslibToMainThread.Prefix(dummyInstance);
+
+        Assert.That(result, Is.False);
+    }
+
+    [Test]
+    public void OnDefsLoaded_ThrowsNotImplementedExceptionAsStub()
+    {
+        Assert.Throws<NotImplementedException>(() => RedirectHugslibToMainThread.OnDefsLoaded(new object()));
     }
 }

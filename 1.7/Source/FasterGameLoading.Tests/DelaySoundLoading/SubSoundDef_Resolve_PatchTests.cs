@@ -9,145 +9,143 @@ using NUnit.Framework;
 using Verse;
 using Verse.Sound;
 
-namespace FasterGameLoading.Tests.DelaySoundLoading
+namespace FasterGameLoading.Tests.DelaySoundLoading;
+[TestFixture]
+public class SubSoundDef_Resolve_PatchTests
 {
-    [TestFixture]
-    public class SubSoundDef_Resolve_PatchTests
+    private static Harmony harmony;
+    private DelayedActions delayedActions;
+    private static Action capturedExecuteWhenFinishedAction;
+    private static Type patchType;
+    private static MethodInfo transpilerMethod;
+    private static MethodInfo executeDelayedMethod;
+
+    private static bool PrefixSkip() => false;
+
+    private static bool MockExecuteWhenFinished(Action action)
     {
-        private static Harmony harmony;
-        private DelayedActions delayedActions;
-        private static Action capturedExecuteWhenFinishedAction;
-        private static Type patchType;
-        private static MethodInfo transpilerMethod;
-        private static MethodInfo executeDelayedMethod;
+        capturedExecuteWhenFinishedAction = action;
+        return false;
+    }
 
-        private static bool PrefixSkip() => false;
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
+    {
+        harmony = new Harmony("FasterGameLoading.Tests.SubSoundDef_Resolve_PatchTests");
 
-        private static bool MockExecuteWhenFinished(Action action)
+        patchType = typeof(FasterGameLoadingMod).Assembly.GetType("FasterGameLoading.SubSoundDef_ResolvePatch");
+        transpilerMethod = AccessTools.Method(patchType, "LateExecute");
+        executeDelayedMethod = AccessTools.Method(patchType, "ExecuteDelayed");
+
+        var emitMethod = AccessTools.Method(typeof(FGLLog), "Emit");
+        if (emitMethod != null)
         {
-            capturedExecuteWhenFinishedAction = action;
-            return false;
+            harmony.Patch(emitMethod, prefix: new HarmonyMethod(AccessTools.Method(typeof(SubSoundDef_Resolve_PatchTests), nameof(PrefixSkip))));
         }
 
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+        // Patch LongEventHandler.ExecuteWhenFinished (may fail if ECall, guard with try/catch)
+        try
         {
-            harmony = new Harmony("FasterGameLoading.Tests.SubSoundDef_Resolve_PatchTests");
-
-            patchType = typeof(FasterGameLoadingMod).Assembly.GetType("FasterGameLoading.SubSoundDef_ResolvePatch");
-            transpilerMethod = AccessTools.Method(patchType, "LateExecute");
-            executeDelayedMethod = AccessTools.Method(patchType, "ExecuteDelayed");
-
-            var emitMethod = AccessTools.Method(typeof(FGLLog), "Emit");
-            if (emitMethod != null)
+            var execWhenFinished = AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished));
+            if (execWhenFinished != null)
             {
-                harmony.Patch(emitMethod, prefix: new HarmonyMethod(AccessTools.Method(typeof(SubSoundDef_Resolve_PatchTests), nameof(PrefixSkip))));
+                harmony.Patch(execWhenFinished, prefix: new HarmonyMethod(AccessTools.Method(typeof(SubSoundDef_Resolve_PatchTests), nameof(MockExecuteWhenFinished))));
             }
-
-            // Patch LongEventHandler.ExecuteWhenFinished (may fail if ECall, guard with try/catch)
-            try
-            {
-                var execWhenFinished = AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished));
-                if (execWhenFinished != null)
-                {
-                    harmony.Patch(execWhenFinished, prefix: new HarmonyMethod(AccessTools.Method(typeof(SubSoundDef_Resolve_PatchTests), nameof(MockExecuteWhenFinished))));
-                }
-            }
-            catch { }
         }
+        catch { }
+    }
 
-        [OneTimeTearDown]
-        public void OneTimeTearDown()
+    [OneTimeTearDown]
+    public void OneTimeTearDown()
+    {
+        harmony?.UnpatchAll("FasterGameLoading.Tests.SubSoundDef_Resolve_PatchTests");
+    }
+
+    [SetUp]
+    public void SetUp()
+    {
+        delayedActions = new DelayedActions();
+        capturedExecuteWhenFinishedAction = null;
+
+        var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
+        prop?.SetValue(null, delayedActions, index: null);
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        delayedActions?.ClearQueues();
+        var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
+        prop?.SetValue(null, value: null, index: null);
+    }
+
+    [Test]
+    public void LateExecute_Transpiler_ReplacesExecuteWhenFinishedWithLdarg0AndExecuteDelayed()
+    {
+        Assert.That(transpilerMethod, Is.Not.Null);
+        Assert.That(executeDelayedMethod, Is.Not.Null);
+
+        var executeWhenFinished = AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished));
+
+        var instructions = new List<CodeInstruction>
         {
-            harmony?.UnpatchAll("FasterGameLoading.Tests.SubSoundDef_Resolve_PatchTests");
-        }
+            new CodeInstruction(OpCodes.Nop),
+            new CodeInstruction(OpCodes.Call, executeWhenFinished),
+            new CodeInstruction(OpCodes.Ret),
+        };
 
-        [SetUp]
-        public void SetUp()
-        {
-            delayedActions = new DelayedActions();
-            capturedExecuteWhenFinishedAction = null;
+        var output = ((IEnumerable<CodeInstruction>)transpilerMethod.Invoke(null, new object[] { instructions })).ToList();
 
-            var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
-            prop?.SetValue(null, delayedActions, index: null);
-        }
+        Assert.That(output.Count, Is.EqualTo(4));
+        Assert.That(output[0].opcode, Is.EqualTo(OpCodes.Nop));
+        Assert.That(output[1].opcode, Is.EqualTo(OpCodes.Ldarg_0));
+        Assert.That(output[2].opcode, Is.EqualTo(OpCodes.Call));
+        Assert.That(output[2].operand, Is.EqualTo(executeDelayedMethod));
+        Assert.That(output[3].opcode, Is.EqualTo(OpCodes.Ret));
+    }
 
-        [TearDown]
-        public void TearDown()
-        {
-            delayedActions?.ClearQueues();
-            var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
-            prop?.SetValue(null, value: null, index: null);
-        }
+    [Test]
+    public void ExecuteDelayed_WhenActionIsNull_DoesNotEnqueueOrDispatch()
+    {
+        var sound = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
 
-        [Test]
-        public void LateExecute_Transpiler_ReplacesExecuteWhenFinishedWithLdarg0AndExecuteDelayed()
-        {
-            Assert.That(transpilerMethod, Is.Not.Null);
-            Assert.That(executeDelayedMethod, Is.Not.Null);
+        executeDelayedMethod.Invoke(null, new object[] { null, sound });
 
-            var executeWhenFinished = AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished));
+        Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(0));
+        Assert.That(capturedExecuteWhenFinishedAction, Is.Null);
+    }
 
-            var instructions = new List<CodeInstruction>
-            {
-                new CodeInstruction(OpCodes.Nop),
-                new CodeInstruction(OpCodes.Call, executeWhenFinished),
-                new CodeInstruction(OpCodes.Ret),
-            };
+    [Test]
+    public void ExecuteDelayed_WhenDelayedActionsNotNull_EnqueuesToDelayedActions()
+    {
+        var sound = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
+        bool actionExecuted = false;
+        Action act = () => actionExecuted = true;
 
-            var output = ((IEnumerable<CodeInstruction>)transpilerMethod.Invoke(null, new object[] { instructions })).ToList();
+        executeDelayedMethod.Invoke(null, new object[] { act, sound });
 
-            Assert.That(output.Count, Is.EqualTo(4));
-            Assert.That(output[0].opcode, Is.EqualTo(OpCodes.Nop));
-            Assert.That(output[1].opcode, Is.EqualTo(OpCodes.Ldarg_0));
-            Assert.That(output[2].opcode, Is.EqualTo(OpCodes.Call));
-            Assert.That(output[2].operand, Is.EqualTo(executeDelayedMethod));
-            Assert.That(output[3].opcode, Is.EqualTo(OpCodes.Ret));
-        }
+        Assert.That(capturedExecuteWhenFinishedAction, Is.Null);
+        Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(1));
 
-        [Test]
-        public void ExecuteDelayed_WhenActionIsNull_DoesNotEnqueueOrDispatch()
-        {
-            var sound = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
+        delayedActions.ResolvePendingSubSounds();
+        Assert.That(actionExecuted, Is.True);
+        Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(0));
+    }
 
-            executeDelayedMethod.Invoke(null, new object[] { null, sound });
+    [Test]
+    public void ExecuteDelayed_WhenDelayedActionsIsNull_DispatchesToLongEventHandler()
+    {
+        var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
+        prop?.SetValue(null, value: null, index: null);
 
-            Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(0));
-            Assert.That(capturedExecuteWhenFinishedAction, Is.Null);
-        }
+        var sound = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
+        bool actionExecuted = false;
+        Action act = () => actionExecuted = true;
 
-        [Test]
-        public void ExecuteDelayed_WhenDelayedActionsNotNull_EnqueuesToDelayedActions()
-        {
-            var sound = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
-            bool actionExecuted = false;
-            Action act = () => actionExecuted = true;
+        executeDelayedMethod.Invoke(null, new object[] { act, sound });
 
-            executeDelayedMethod.Invoke(null, new object[] { act, sound });
-
-            Assert.That(capturedExecuteWhenFinishedAction, Is.Null);
-            Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(1));
-
-            delayedActions.ResolvePendingSubSounds();
-            Assert.That(actionExecuted, Is.True);
-            Assert.That(delayedActions.SubSoundDefToResolveCount, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void ExecuteDelayed_WhenDelayedActionsIsNull_DispatchesToLongEventHandler()
-        {
-            var prop = typeof(FasterGameLoadingMod).GetProperty(nameof(FasterGameLoadingMod.delayedActions), BindingFlags.Public | BindingFlags.Static);
-            prop?.SetValue(null, value: null, index: null);
-
-            var sound = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
-            bool actionExecuted = false;
-            Action act = () => actionExecuted = true;
-
-            executeDelayedMethod.Invoke(null, new object[] { act, sound });
-
-            Assert.That(capturedExecuteWhenFinishedAction, Is.SameAs(act));
-            capturedExecuteWhenFinishedAction();
-            Assert.That(actionExecuted, Is.True);
-        }
+        Assert.That(capturedExecuteWhenFinishedAction, Is.SameAs(act));
+        capturedExecuteWhenFinishedAction();
+        Assert.That(actionExecuted, Is.True);
     }
 }

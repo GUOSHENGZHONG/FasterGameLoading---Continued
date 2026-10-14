@@ -9,8 +9,6 @@
     <LangVersion>latest</LangVersion>
     <RimWorldDir>$(MSBuildThisFileDirectory)..\..\..\..\</RimWorldDir>
     <WorkshopDir>$(MSBuildThisFileDirectory)..\..\..\..\..\..\workshop\content\294100\</WorkshopDir>
-    <!-- MA0159 建議改用 Order()，Order() 要 .NET 7 起才有；維持與 1.6 版原始碼一致，不採用。 -->
-    <NoWarn>$(NoWarn);MA0159</NoWarn>
     <!-- 遊戲只載入 Assemblies 內的 DLL，不需要 .deps.json -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
