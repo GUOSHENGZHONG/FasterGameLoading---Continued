@@ -259,7 +259,7 @@ public class FasterGameLoadingSettingsTests
         var originalTypes = TypeLookupCache.FullNamesFromLastSession;
         var originalFingerprint = TypeLookupCache.PersistedFingerprint;
         var originalMods = SessionCache.modsInLastSession;
-        var originalBakeSpeeds = AdaptiveAtlasBaker.BakeSpeedHistory;
+        var originalBakeSpeeds = SessionCache.BakeSpeedHistory;
         try
         {
             var mgr = new TextureCacheManager(tempDir);
@@ -276,7 +276,7 @@ public class FasterGameLoadingSettingsTests
             TypeLookupCache.FullNamesFromLastSession = originalTypes;
             TypeLookupCache.PersistedFingerprint = originalFingerprint;
             SessionCache.modsInLastSession = originalMods;
-            AdaptiveAtlasBaker.BakeSpeedHistory = originalBakeSpeeds;
+            SessionCache.BakeSpeedHistory = originalBakeSpeeds;
             try { System.IO.Directory.Delete(tempDir, true); } catch { }
         }
     }

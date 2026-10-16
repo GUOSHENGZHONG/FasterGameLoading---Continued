@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.Serialization;
 using HarmonyLib;
 using NUnit.Framework;
@@ -73,17 +72,9 @@ public class SessionCacheTests
     {
         TypeLookupCache.FullNamesFromLastSession = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
         SessionCache.modsInLastSession = new List<string>();
-        AdaptiveAtlasBaker.BakeSpeedHistory = new List<float>();
+        SessionCache.BakeSpeedHistory = new List<float>();
         // 預設與本次組件一致，讓只驗證 mod 清單比對的測試不受組件指紋影響。
         TypeLookupCache.PersistedFingerprint = TypeLookupCache.ComputeCurrentFingerprint();
-    }
-
-    [Test]
-    public void Weights_LengthMatchesHistorySize()
-    {
-        Assert.That(AdaptiveAtlasBaker.BakeSpeedWeights.Length, Is.EqualTo(4));
-        Assert.That(AdaptiveAtlasBaker.BakeSpeedWeights.Length, Is.EqualTo(AdaptiveAtlasBaker.BakeSpeedHistorySize));
-        Assert.That(AdaptiveAtlasBaker.BakeSpeedWeights.Sum(), Is.EqualTo(1.0f).Within(0.001f));
     }
 
     [Test]
@@ -245,7 +236,7 @@ public class SessionCacheTests
 
         InvokeRestoreAfterLoad();
 
-        // 烘焙速度記錄的空值補齊在 AdaptiveAtlasBaker.ExposeBakeSpeedHistory 讀檔當下處理。
+        // 烘焙速度記錄的空值補齊在 SessionCache.ExposeData 讀檔當下處理。
         Assert.That(TypeLookupCache.FullNamesFromLastSession, Is.Not.Null.And.Empty);
         Assert.That(SessionCache.modsInLastSession, Is.Not.Null.And.Empty);
     }

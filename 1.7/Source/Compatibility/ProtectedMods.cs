@@ -12,7 +12,7 @@ namespace FasterGameLoading;
 /// FGL 必須讓開的 Mod，分兩種保護：
 /// - 貼圖保護：外星人種族（HAR）、Ancot 函式庫及其衍生，加上 bionic icons；
 ///   Pumpkin Library 材質包若以 DDS 取代上述 mod 的貼圖，也一併保護。
-///   它們的 bodyAddon、頭髮、耳朵與多遮罩貼圖不降質、不進 registry，開啟自適應烘焙時也不進靜態圖集。
+///   它們的 bodyAddon、頭髮、耳朵與多遮罩貼圖不降質、不進 registry，開啟自適應烘焙時也不進靜態圖集（1.7 沒有自適應烘焙，這一項不生效）。
 /// - 提早載入保護：Ayameduki 與 AyaTweaks（WRK.）系列；HAR 及其衍生只在無法延後 HAR 的貼圖變體掃描時
 ///   （見 <see cref="AlienRaceGraphicsHookGate"/>）才列入。它們的內容不提早載入，XML 也不平行解析。
 /// 判斷結果依 mod 快取，語言切換時重算。
@@ -23,10 +23,12 @@ public static class ProtectedMods
 
     private static readonly HashSet<string> pumpkinLibraryPackageIds = new(StringComparer.OrdinalIgnoreCase) { "pumpkin.pumpkinlibrary" };
 
+    // Pumpkin Library 的 1.7 組件把版本資料夾寫死為 "1.7"（其 LoadFolders 的 v1.7 區段也是 1.7/Modules/TextureOverride），
+    // 本組件只在 1.7 載入，所以同樣固定為 "1.7"；沒有 "1.6" 後備：1.7 不會載入 Pumpkin 的 1.6 資料夾。
     private static readonly string[] PumpkinSettingsRelativePaths =
     [
         "TextureOverrideSettings.xml",
-        Path.Combine("1.6", "Modules", "TextureOverride", "TextureOverrideSettings.xml"),
+        Path.Combine("1.7", "Modules", "TextureOverride", "TextureOverrideSettings.xml"),
         Path.Combine("Modules", "TextureOverride", "TextureOverrideSettings.xml"),
     ];
 
@@ -93,7 +95,7 @@ public static class ProtectedMods
         return false;
     }
 
-    /// <summary>貼圖是否要排除在靜態圖集之外：只在本次啟用自適應烘焙時，對受貼圖保護的 Mod 生效。</summary>
+    /// <summary>貼圖是否要排除在靜態圖集之外：只在本次啟用自適應烘焙時，對受貼圖保護的 Mod 生效；1.7 恆為 false。</summary>
     public static bool ShouldSkipBaking(string path)
     {
         return DelayedActions.AdaptiveBakingEnabled && IsProtectedTexturePath(path);
@@ -213,7 +215,7 @@ public static class ProtectedMods
     /// 讀取 Pumpkin Library TextureOverride 的 target 與 provider（材質包）清單。
     /// TextureOverride 會移除 target 中有同路徑 .dds 的原圖，改顯示 provider 的 DDS；它對每個 target 都掃描全部 provider，
     /// 兩份清單沒有一對一配對，所以任一 target 受貼圖保護時，全部 provider 都要保護。
-    /// 設定檔的搜尋順序與 Pumpkin 的 TextureOverrideSettings.TryLoad 相同。
+    /// 設定檔的搜尋順序與 Pumpkin 的 TextureOverrideSettings.TryLoad 相同：mod 根目錄、1.7/Modules/TextureOverride、Modules/TextureOverride。
     /// Pumpkin 未啟用、TextureOverride 模組未經 LoadFolders 載入、找不到或無法解析設定檔時回傳 null。
     /// </summary>
     private static PumpkinTextureOverride ReadPumpkinTextureOverride(IEnumerable<ModContentPack> mods)

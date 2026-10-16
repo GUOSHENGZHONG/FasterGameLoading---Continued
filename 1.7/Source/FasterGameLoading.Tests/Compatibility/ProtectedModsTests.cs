@@ -23,6 +23,7 @@ public class ProtectedModsTests
     public void TearDown()
     {
         FasterGameLoadingSettings.StaticAtlasesBaking = previousStaticAtlasesBaking;
+        DelayedActions.ReleaseStartupSettingsForTests();
         SessionLifecycle.Raise(LifecyclePhase.LanguageReloading);
     }
 
@@ -112,10 +113,11 @@ public class ProtectedModsTests
     {
         ProtectedMods.SetProtectedTextureRootsForTests("C:/Mods/TargetMod");
 
-        FasterGameLoadingSettings.StaticAtlasesBaking = false;
+        // 1.7 恆為關閉，即使設定值開啟也一樣。
+        FasterGameLoadingSettings.StaticAtlasesBaking = true;
         Assert.That(ProtectedMods.ShouldSkipBaking("C:/Mods/TargetMod/Textures/Body.png"), Is.False);
 
-        FasterGameLoadingSettings.StaticAtlasesBaking = true;
+        DelayedActions.SetAdaptiveBakingForTests(true);
         Assert.That(ProtectedMods.ShouldSkipBaking("C:/Mods/TargetMod/Textures/Body.png"), Is.True);
         Assert.That(ProtectedMods.ShouldSkipBaking("C:/Mods/OtherMod/Textures/Body.png"), Is.False);
     }
@@ -169,7 +171,7 @@ public class ProtectedModsTests
 
     // ── Pumpkin Library 材質包 ──
 
-    private const string PumpkinModuleSettingsDir = @"1.6\Modules\TextureOverride";
+    private const string PumpkinModuleSettingsDir = @"1.7\Modules\TextureOverride";
 
     private static string CreatePumpkinRoot(string settingsXml, string settingsDir = PumpkinModuleSettingsDir)
     {
@@ -189,7 +191,7 @@ public class ProtectedModsTests
     private static ModContentPack CreatePumpkinMod(string rootDir, bool textureOverrideLoaded = true, string packageId = "pumpkin.pumpkinlibrary", string packageIdPlayerFacing = null)
     {
         var mod = CreateMod(packageId, rootDir, packageIdPlayerFacing);
-        var folders = new List<string> { System.IO.Path.Combine(rootDir, "1.6") };
+        var folders = new List<string> { System.IO.Path.Combine(rootDir, "1.7") };
         if (textureOverrideLoaded) folders.Insert(0, System.IO.Path.Combine(rootDir, PumpkinModuleSettingsDir));
         mod.foldersToLoadDescendingOrder = folders;
         return mod;
@@ -306,7 +308,7 @@ public class ProtectedModsTests
     [Test]
     public void TextureRoots_PreferRootLevelPumpkinSettingsLikePumpkin()
     {
-        // Pumpkin 先找 mod 根目錄的設定檔，找到就不看 1.6/Modules/TextureOverride 下的那份。
+        // Pumpkin 先找 mod 根目錄的設定檔，找到就不看 1.7/Modules/TextureOverride 下的那份。
         var pumpkinRoot = CreatePumpkinRoot(PumpkinSettings("some.other.mod", "pumpkin.otherpack"));
         try
         {
@@ -406,10 +408,11 @@ public class ProtectedModsTests
     [Test]
     public void BakingPatch_Prepare_FollowsAdaptiveBaking()
     {
-        FasterGameLoadingSettings.StaticAtlasesBaking = false;
+        // 1.7 恆為關閉，即使設定值開啟也一樣。
+        FasterGameLoadingSettings.StaticAtlasesBaking = true;
         Assert.That(AdaptiveBakingSkipList.Prepare(), Is.False);
 
-        FasterGameLoadingSettings.StaticAtlasesBaking = true;
+        DelayedActions.SetAdaptiveBakingForTests(true);
         Assert.That(AdaptiveBakingSkipList.Prepare(), Is.True);
     }
 
@@ -419,7 +422,7 @@ public class ProtectedModsTests
         var tex1 = (Texture2D)FormatterServices.GetUninitializedObject(typeof(Texture2D));
         var tex2 = (Texture2D)FormatterServices.GetUninitializedObject(typeof(Texture2D));
         ProtectedMods.SetProtectedTextureRootsForTests("C:/Mods/TargetMod");
-        FasterGameLoadingSettings.StaticAtlasesBaking = true;
+        DelayedActions.SetAdaptiveBakingForTests(true);
         LoadedTextureRegistry.MarkSkipBakingIfProtected("C:/Mods/TargetMod/Textures/Body.png", tex1);
 
         Assert.That(AdaptiveBakingSkipList.Prefix(TextureAtlasGroup.Building, tex1, mask: null), Is.False);

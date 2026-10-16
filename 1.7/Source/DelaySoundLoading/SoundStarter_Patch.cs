@@ -65,7 +65,8 @@ internal static class SoundStarter_Patch
         return ResolvedGrains(subSound).Count > 0;
     }
 
-    // resolvedGrains 為非公開欄位：Publicizer 的存取略過只在遊戲的 Mono 上有效，單元測試的 .NET 會拋 FieldAccessException。
+    // resolvedGrains 為非公開欄位：Publicizer 只讓編譯通過，直接存取在 .NET 10（CoreCLR）上會拋 FieldAccessException
+    // （單元測試已實測），因此改以 AccessTools 的欄位參考存取；不依賴遊戲執行環境是否放寬存取檢查。
     private static readonly AccessTools.FieldRef<SubSoundDef, System.Collections.Generic.List<ResolvedGrain>> ResolvedGrains =
         AccessTools.FieldRefAccess<SubSoundDef, System.Collections.Generic.List<ResolvedGrain>>(nameof(SubSoundDef.resolvedGrains));
 

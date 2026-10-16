@@ -31,7 +31,7 @@ public class FasterGameLoadingSettings : ModSettings
     public static bool earlyModContentLoading = true;
 #pragma warning restore MA0069, S1104
 
-    /// <summary>自適應靜態圖集烘焙（預設關閉）</summary>
+    /// <summary>自適應靜態圖集烘焙（預設關閉）。僅 1.6 使用；1.7 只存讀此值，不顯示也不生效。</summary>
     public static bool StaticAtlasesBaking { get; set; }
 
     /// <summary>
@@ -91,7 +91,7 @@ public class FasterGameLoadingSettings : ModSettings
         ls.CheckboxLabeled("FGL_TypeLookupCache".Translate(), ref typeLookupCache);
         TypeLookupCache = typeLookupCache;
         var delayGraphicLoading = DelayGraphicLoading;
-        // 延遲載入與自適應烘焙在 Mod 建構子定案（DelayedActions.CaptureStartupSettings），改了要重開遊戲才生效。
+        // 延遲載入在 Mod 建構子定案（DelayedActions.CaptureStartupSettings），改了要重開遊戲才生效。
         ls.CheckboxLabeled("FGL_DelayGraphicLoading".Translate() + " " + "FGL_RequiresRestart".Translate(), ref delayGraphicLoading);
         DelayGraphicLoading = delayGraphicLoading;
     }
@@ -99,9 +99,8 @@ public class FasterGameLoadingSettings : ModSettings
     /// <summary>圖集烘焙與詳細日誌開關。</summary>
     private static void DrawDiagnosticsOptions(Listing_Standard ls)
     {
-        var staticAtlasesBaking = StaticAtlasesBaking;
-        ls.CheckboxLabeled("FGL_StaticAtlasesBaking".Translate() + " " + "FGL_RequiresRestart".Translate(), ref staticAtlasesBaking);
-        StaticAtlasesBaking = staticAtlasesBaking;
+        // 1.7 不使用自適應烘焙，選項不顯示：它會繞過 1.7 原版烘焙的 EndDeferredLoading、圖集壓縮、圖集磁碟快取與來源紋理釋放。
+        // 設定值照常存讀，切回 1.6 時保留；DelayedActions.AdaptiveBakingEnabled 在 1.7 恆為 false。
         var trimStaticAtlases = TrimStaticAtlases;
         ls.CheckboxLabeled("FGL_TrimStaticAtlases".Translate(), ref trimStaticAtlases, "FGL_TrimStaticAtlasesTip".Translate());
         TrimStaticAtlases = trimStaticAtlases;

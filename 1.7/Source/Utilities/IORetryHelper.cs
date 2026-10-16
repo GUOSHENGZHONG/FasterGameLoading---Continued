@@ -24,7 +24,9 @@ public static class IORetryHelper
             try
             {
                 File.WriteAllBytes(tmp, bytes);
-                MoveOrReplace(tmp, path);
+                // .NET 10 的 File.Move 可覆寫目標：Windows 以 MoveFileEx(REPLACE_EXISTING)、其他平台以 rename 一步完成，
+                // 不像先判斷 File.Exists 再 File.Replace 會有目標在兩者之間被刪除的競態。
+                File.Move(tmp, path, overwrite: true);
                 return;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -33,19 +35,6 @@ public static class IORetryHelper
                 if (i == maxRetries - 1) throw;
                 Thread.Sleep(delayMs);
             }
-        }
-    }
-
-    private static void MoveOrReplace(string tmp, string path)
-    {
-        if (File.Exists(path))
-        {
-            // .NET 4.7.2 的 File.Move 不支援覆寫，目標存在時以 File.Replace 原子性替換。
-            File.Replace(tmp, path, destinationBackupFileName: null);
-        }
-        else
-        {
-            File.Move(tmp, path);
         }
     }
 

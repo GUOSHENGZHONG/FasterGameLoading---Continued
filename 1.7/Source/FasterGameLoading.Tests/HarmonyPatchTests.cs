@@ -401,7 +401,7 @@ public class HarmonyPatchTests
         var originalEnableMultiThreading = FasterGameLoadingSettings.EnableMultiThreading;
         var originalTypes = TypeLookupCache.FullNamesFromLastSession;
         var originalMods = SessionCache.modsInLastSession;
-        var originalBakeSpeeds = AdaptiveAtlasBaker.BakeSpeedHistory;
+        var originalBakeSpeeds = SessionCache.BakeSpeedHistory;
 
         try
         {
@@ -414,7 +414,7 @@ public class HarmonyPatchTests
             TypeLookupCache.FullNamesFromLastSession = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
             TypeLookupCache.FullNamesFromLastSession.TryAdd("type", "System.String");
             SessionCache.modsInLastSession = ["test.mod"];
-            AdaptiveAtlasBaker.BakeSpeedHistory = [45f];
+            SessionCache.BakeSpeedHistory = [45f];
 
             new FasterGameLoadingSettings().ExposeData();
 
@@ -425,7 +425,7 @@ public class HarmonyPatchTests
             Assert.IsFalse(FasterGameLoadingSettings.EnableMultiThreading);
             Assert.That(TypeLookupCache.FullNamesFromLastSession.Keys, Is.EquivalentTo(ExpectedSessionTypes));
             Assert.That(SessionCache.modsInLastSession, Is.EqualTo(ExpectedSessionMods));
-            Assert.That(AdaptiveAtlasBaker.BakeSpeedHistory, Is.EqualTo(ExpectedSessionBakeSpeeds));
+            Assert.That(SessionCache.BakeSpeedHistory, Is.EqualTo(ExpectedSessionBakeSpeeds));
         }
         finally
         {
@@ -437,7 +437,7 @@ public class HarmonyPatchTests
             FasterGameLoadingSettings.EnableMultiThreading = originalEnableMultiThreading;
             TypeLookupCache.FullNamesFromLastSession = originalTypes;
             SessionCache.modsInLastSession = originalMods;
-            AdaptiveAtlasBaker.BakeSpeedHistory = originalBakeSpeeds;
+            SessionCache.BakeSpeedHistory = originalBakeSpeeds;
         }
     }
 #pragma warning restore MA0051
@@ -448,7 +448,7 @@ public class HarmonyPatchTests
     {
         var originalTypes = TypeLookupCache.FullNamesFromLastSession;
         var originalMods = SessionCache.modsInLastSession;
-        var originalBakeSpeeds = AdaptiveAtlasBaker.BakeSpeedHistory;
+        var originalBakeSpeeds = SessionCache.BakeSpeedHistory;
         var savePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"FGL_Settings_{Guid.NewGuid():N}.xml");
 
         try
@@ -456,7 +456,7 @@ public class HarmonyPatchTests
             TypeLookupCache.FullNamesFromLastSession = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
             TypeLookupCache.FullNamesFromLastSession.TryAdd("type", "System.String");
             SessionCache.modsInLastSession = ["test.mod"];
-            AdaptiveAtlasBaker.BakeSpeedHistory = [45f];
+            SessionCache.BakeSpeedHistory = [45f];
 
             Scribe.saver.InitSaving(savePath, "settings");
             try
@@ -484,7 +484,7 @@ public class HarmonyPatchTests
 
             TypeLookupCache.FullNamesFromLastSession = originalTypes;
             SessionCache.modsInLastSession = originalMods;
-            AdaptiveAtlasBaker.BakeSpeedHistory = originalBakeSpeeds;
+            SessionCache.BakeSpeedHistory = originalBakeSpeeds;
 
             if (System.IO.File.Exists(savePath))
             {

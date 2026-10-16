@@ -87,8 +87,8 @@ public static class DirectXmlLoader_XmlAssetsInModFolder_Patch
 
             foreach (var fileInfo in directory.EnumerateFiles("*.xml", SearchOption.AllDirectories))
             {
-                // 以 '.' 開頭即涵蓋 macOS 的 "._" 資源分叉檔；net472 無 StartsWith(char) 多載，
-                // 直接比對首字元既正確又省去一次字串比對。
+                // 以 '.' 開頭即涵蓋 macOS 的 "._" 資源分叉檔；
+                // 直接比對首字元，效果等同 StartsWith('.')。
                 if (fileInfo.Name.Length > 0 && fileInfo.Name[0] == '.')
                 {
                     continue;

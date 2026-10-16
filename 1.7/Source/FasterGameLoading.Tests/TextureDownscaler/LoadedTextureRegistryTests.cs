@@ -7,8 +7,6 @@ namespace FasterGameLoading.Tests.TextureDownscaler;
 [TestFixture]
 public class LoadedTextureRegistryTests
 {
-    private bool previousStaticAtlasesBaking;
-
     private static Texture2D NewDetachedTexture()
     {
         return (Texture2D)FormatterServices.GetUninitializedObject(typeof(Texture2D));
@@ -17,14 +15,13 @@ public class LoadedTextureRegistryTests
     [SetUp]
     public void SetUp()
     {
-        previousStaticAtlasesBaking = FasterGameLoadingSettings.StaticAtlasesBaking;
         LoadedTextureRegistry.Clear();
     }
 
     [TearDown]
     public void TearDown()
     {
-        FasterGameLoadingSettings.StaticAtlasesBaking = previousStaticAtlasesBaking;
+        DelayedActions.ReleaseStartupSettingsForTests();
         SessionLifecycle.Raise(LifecyclePhase.LanguageReloading);
     }
 
@@ -96,11 +93,11 @@ public class LoadedTextureRegistryTests
         var protectedTexture = NewDetachedTexture();
         var otherTexture = NewDetachedTexture();
 
-        FasterGameLoadingSettings.StaticAtlasesBaking = false;
+        // 1.7 恆為關閉：不標記。
         LoadedTextureRegistry.MarkSkipBakingIfProtected("C:/Mods/TargetMod/Textures/Alien/head.png", protectedTexture);
         Assert.That(LoadedTextureRegistry.IsSkippedForBaking(protectedTexture), Is.False);
 
-        FasterGameLoadingSettings.StaticAtlasesBaking = true;
+        DelayedActions.SetAdaptiveBakingForTests(true);
         LoadedTextureRegistry.MarkSkipBakingIfProtected("C:/Mods/TargetMod/Textures/Alien/head.png", protectedTexture);
         LoadedTextureRegistry.MarkSkipBakingIfProtected("C:/Mods/OtherMod/Textures/rock.png", otherTexture);
 

@@ -86,10 +86,9 @@ public class DelayedActionsTests
         }
     }
 
-    private static void CaptureSettings(bool delay, bool adaptive)
+    private static void CaptureSettings(bool delay)
     {
         FasterGameLoadingSettings.DelayGraphicLoading = delay;
-        FasterGameLoadingSettings.StaticAtlasesBaking = adaptive;
         DelayedActions.CaptureStartupSettings();
     }
 
@@ -109,7 +108,7 @@ public class DelayedActionsTests
     [Test]
     public void ClearQueues_DropsAllQueuedWorkAndResetsPhase()
     {
-        CaptureSettings(delay: false, adaptive: false);
+        CaptureSettings(delay: false);
         RunToCompletion();
         Assert.That(delayedActions.Phase, Is.EqualTo(DeferredPhase.Completed));
 
@@ -159,7 +158,7 @@ public class DelayedActionsTests
     [Test]
     public void PerformActions_WhenDeferredVisualsDisabled_ResolvesSoundsWithoutBaking()
     {
-        CaptureSettings(delay: false, adaptive: false);
+        CaptureSettings(delay: false);
         bool soundResolved = false;
         delayedActions.EnqueueSubSound((SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef)), () => soundResolved = true);
 
@@ -194,7 +193,7 @@ public class DelayedActionsTests
     [Test]
     public void PerformActions_MarksVisualsReadyBeforeSoundsAndAllReadyAfterThem()
     {
-        CaptureSettings(delay: false, adaptive: false);
+        CaptureSettings(delay: false);
         WithTimelineAfterMainMenu((timeline, setNow) =>
         {
             setNow(3);
@@ -235,7 +234,7 @@ public class DelayedActionsTests
     [Test]
     public void PerformActions_WhenDeferredVisualsEnabled_LoadsGraphicsThenIconsBeforeBaking()
     {
-        CaptureSettings(delay: true, adaptive: false);
+        CaptureSettings(delay: true);
         // 圖示只需要剛載入的圖形、與圖集無關，排在烘焙之前，玩家不必等整批圖集烘焙完才看到正確圖示。
         var enumerator = delayedActions.PerformActions();
         try
@@ -257,7 +256,7 @@ public class DelayedActionsTests
     [Test]
     public void StartupBake_IsHeldUntilDeferredVanillaBakeRuns()
     {
-        CaptureSettings(delay: true, adaptive: false);
+        CaptureSettings(delay: true);
         Assert.That(DelayedActions.AllowsVanillaStaticBake, Is.False, "啟動流程那一次烘焙必須延後到延遲圖形載入之後。");
 
         RunToCompletion();
@@ -268,9 +267,23 @@ public class DelayedActionsTests
     }
 
     [Test]
+    public void AdaptiveBaking_IsAlwaysDisabledOn17_EvenWhenTheSettingIsOn()
+    {
+        // 1.7 的原版烘焙含 EndDeferredLoading、圖集壓縮、磁碟快取與來源釋放，自適應烘焙會全部繞過；設定值只保留供 1.6 使用。
+        FasterGameLoadingSettings.StaticAtlasesBaking = true;
+        CaptureSettings(delay: true);
+
+        Assert.That(DelayedActions.AdaptiveBakingEnabled, Is.False);
+
+        RunToCompletion();
+
+        Assert.That(vanillaBakeCalls, Is.EqualTo(1), "延遲管線必須走原版 BakeStaticAtlases。");
+    }
+
+    [Test]
     public void LanguageReload_HoldsStartupBakeAgain()
     {
-        CaptureSettings(delay: true, adaptive: false);
+        CaptureSettings(delay: true);
         RunToCompletion();
         Assert.That(DelayedActions.AllowsVanillaStaticBake, Is.True);
 
@@ -284,7 +297,7 @@ public class DelayedActionsTests
     {
         // PostLoad 補丁在啟動時依「開啟」套用並持續排入佇列；玩家之後在設定頁關閉，
         // 管線仍須照定案值執行，否則切換語言後排入的圖形永遠不會載入。
-        CaptureSettings(delay: true, adaptive: false);
+        CaptureSettings(delay: true);
         FasterGameLoadingSettings.DelayGraphicLoading = false;
         bool graphicLoaded = false;
         delayedActions.EnqueueGraphic(CreateMockThingDef("QueuedAfterToggle"), () => graphicLoaded = true);

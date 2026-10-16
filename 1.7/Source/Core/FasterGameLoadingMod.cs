@@ -39,8 +39,6 @@ public class FasterGameLoadingMod : Mod
 
         // 背景預載入已快取的紋理
         ModContentLoaderTexture2D_LoadTexture_Patch.StartPreloadCachedTextures();
-        // 背景依載入順序預讀原始貼圖，主執行緒載入貼圖時不必等磁碟 I/O
-        TexturePrefetcher.Start();
         // 背景預先解碼原版音效，主執行緒解析音效時直接命中快取
         CoreSoundPrewarmer.Start();
         StartCleanupInvalidImageOptCaches();
@@ -113,8 +111,6 @@ public class FasterGameLoadingMod : Mod
             }
         });
     }
-
-
 
     public override string SettingsCategory()
     {

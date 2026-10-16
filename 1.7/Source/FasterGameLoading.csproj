@@ -26,10 +26,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <DebugType>portable</DebugType>
   </PropertyGroup>
-  <Target Name="CopyAssemblies" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="..\Assemblies\" />
-    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="..\Assemblies\" Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
-  </Target>
   <!-- 1.7 沒有 NuGet 參考套件：直接參考遊戲根目錄的組件，以及 Harmony 工作坊版的 1.7 組件。 -->
   <ItemGroup>
     <Reference Include="Assembly-CSharp">

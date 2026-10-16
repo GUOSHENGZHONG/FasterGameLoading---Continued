@@ -13,6 +13,7 @@ RimWorld 1.7 runs on a new engine (Waylith on .NET 10) instead of Unity and Mono
 - **Vanilla sound prewarm** (new, part of **Multi-threaded preloading**): see [Features](#features).
 - **Texture read-ahead** is not used; RimWorld 1.7 reads textures with its own prefetcher.
 - **Faster atlas compression** is not available; RimWorld 1.7 has no matching compression step and its `Compress` has no quality switch, so the option is hidden. Its saved value is kept for when you switch back to 1.6.
+- **Adaptive atlas baking** is not available (RimWorld 1.6 only); it would bypass the end-of-load step, atlas compression, the on-disk atlas cache and source-texture eviction of RimWorld 1.7's own baking, so the option is hidden and RimWorld's baking always runs, including under **Delay graphic and icon loading**. Its saved value is kept for when you switch back to 1.6.
 
 ## Startup Flow
 
@@ -33,8 +34,8 @@ graph TD
     K --> L[Remaining sound definitions resolved<br/>a sound played earlier resolves on demand]
     S -.-> L
     G -. Delay graphic loading on .-> M[Non-essential graphics<br/>and icons queued]
-    H -. Delay graphic loading on .-> N[Startup atlas baking skipped]
-    K -. Delay graphic loading on .-> O[Queued graphics and icons,<br/>then adaptive or vanilla atlas baking]
+    H -. Delay graphic loading on .-> N[Startup atlas baking skipped;<br/>finish deferred texture uploads]
+    K -. Delay graphic loading on .-> O[Queued graphics and icons,<br/>then vanilla atlas baking]
     O -.-> L
 ```
 
@@ -47,7 +48,7 @@ Enabled by default:
 - **Load mod content early**: Processes pending mod content during idle loading gaps before RimWorld's normal `ReloadContentInt` pass reaches those mods. It starts only after every mod constructor has run (at `LoadModXML`), so FGL's and other mods' Harmony patches already apply to early-loaded content. It stops once `PlayDataLoader.Loaded` is true and does not restart on language changes. The frame budget is checked between mods, so one large mod can still take a long frame.
 - **Multi-threaded preloading**: Loads XML assets in parallel while preserving RimWorld's original load-folder override order. With Hyperdrive, `Defs/` XML loading is left to Hyperdrive. It also prewarms the vanilla sounds: RimWorld 1.7 decodes every vanilla sound file one by one on the main thread the first time its sound definition is resolved, about 4 seconds in total, and its own prefetcher does not cover these files. When the mod starts, a background task decodes all vanilla sound files into the engine's resource cache while the main thread is still parsing XML, so resolving sound definitions later only finds them in the cache. The decoding uses half the CPU cores minus one, between 1 and 4 threads (for example 1 thread on 4 cores, 3 on 8 cores, 4 on 10 or more). It uses an internal engine method; if a game update removes it, the prewarm is skipped and RimWorld loads the sounds as before. It decodes all vanilla sound files, including ones no sound definition uses. The texture read-ahead of the 1.6 build is not used, because RimWorld 1.7 opens texture files itself with its own prefetcher, so bytes read ahead would never be taken.
 - **Type lookup cache**: Warms full type names before XML parsing and remembers resolved names across sessions. It follows RimWorld's assembly search order; full names that differ only in letter case are left to RimWorld's case-insensitive lookup so the same type is chosen. It refreshes when the mod list or any game/mod assembly changes, and falls back to RimWorld's lookup for stale entries. Harmony `AccessTools.TypeByName` keeps a separate per-session cache. Each assembly's types are listed once and shared with the `AccessTools.AllTypes` cache, which is rebuilt when an assembly is added or a dynamic assembly defines new types. Changes take effect after restarting the game.
-- **Trim static atlases**: RimWorld packs each static atlas into a power-of-two height and doubles that height when the first attempt does not fit, so large atlases are often half empty rows. Each atlas keeps one empty row per mipmap level, with its height rounded up so every mip level is a multiple of 8 pixels for GPU compression. Every texture keeps its pixel position. Applies to RimWorld's baking and to **Adaptive atlas baking**. Changes take effect after restarting the game.
+- **Trim static atlases**: RimWorld packs each static atlas into a power-of-two height and doubles that height when the first attempt does not fit, so large atlases are often half empty rows. Each atlas keeps one empty row per mipmap level, with its height rounded up so every mip level is a multiple of 8 pixels for block compression. Every texture keeps its pixel position, and the trimmed atlas keeps the original page's sampling settings (filtering, wrap mode, anisotropy, mip bias). Applies to RimWorld's baking. Memory use drops, and cold bakes (no on-disk atlas cache yet) get faster. Changes take effect after restarting the game.
 - **Skip duplicate atlas textures**: RimWorld queues a minifiable building's texture for the Building, Item and Misc atlases. Item and Misc copies are skipped when the texture is also queued for Building and its mask state is consistent across all queued groups. Copies with conflicting mask states are preserved so cross-group lookup cannot select the wrong mask. RimWorld's "found in another atlas group" warning is silenced for removed copies only. Changes take effect after restarting the game.
 
 Always on (no setting):
@@ -56,8 +57,7 @@ Always on (no setting):
 
 Disabled by default:
 
-- **Delay graphic and icon loading**: Moves some non-essential visual and icon work to batched processing after the startup callbacks; it begins while the main menu is shown, without waiting for a save to load. Essential categories such as furniture are chosen after Def references resolve. RimWorld's `ResolveIcon` handles icons before deferred atlas baking. Changes take effect after restarting the game.
-- **Adaptive atlas baking**: Only takes effect together with **Delay graphic and icon loading**. The deferred static atlases are baked while the main menu is shown, several per frame until the frame's time budget (50 ms on the main menu, 8 ms in game) is used up. Each batch targets an amount of pixels sized from the measured GPU speed, at least 1024×1024 pixels' worth, so rendering still benefits from batching; the last batch of a group may be smaller, and a batch with a single texture uses that texture directly, so individual atlases can be smaller than 1024×1024. The budget is checked after each atlas, so it is not a hard cap: one large atlas can still take longer in a single frame. Textures queued by other mods while baking is in progress are baked too. Without delayed loading, RimWorld's original baking is used. Known risky race/multi-mask textures are kept out of static atlases. Changes take effect after restarting the game.
+- **Delay graphic and icon loading**: Moves some non-essential visual and icon work to batched processing after the startup callbacks; it begins while the main menu is shown, without waiting for a save to load. When startup atlas baking is skipped, RimWorld 1.7's deferred texture uploads are still finished before the main menu; textures already queued as atlas sources stay evicted until needed. Queued graphics and icons then finish, followed by RimWorld's own atlas baking, compression, disk caching and source-texture eviction. Essential categories such as furniture are chosen after Def references resolve. RimWorld's `ResolveIcon` handles icons before deferred atlas baking. This option stays disabled by default: the main menu can appear sooner, but the deferred work can cause a long frame afterward and increase memory use. Changes take effect after restarting the game.
 - **Verbose logging**: Prints debugging messages. If it is already on when the game starts, after the first startup it also logs how long after the main menu appeared the deferred visuals and all deferred work became ready (work finished before the main menu counts as +0.0 s), for example `[FasterGameLoading] Startup timing after the main menu appeared: visuals ready +0.6 s, all deferred work done +3.0 s.` It also logs how many vanilla sound files the prewarm decoded, how long it took and how many failed. Loading time up to the main menu is not included. Nothing is logged when the game goes straight into a map without the main menu, and language switches do not log it again.
 
 Manual tool:
@@ -81,7 +81,13 @@ Measured on RimWorld 1.7 with only the Core game active (3 runs each, seconds fr
 | Default settings, without the sound prewarm | 13.3 | +3.8 | 17.1 |
 | Default settings, with the sound prewarm | 14.1 | +0.0 | 14.1 |
 
-Without the prewarm, deferring sound resolution only moved the decoding to after the main menu. With it, sounds are ready when the main menu appears and total startup is about 3 seconds shorter. Reaching the main menu takes slightly longer because the prewarm shares the CPU with startup. Larger mod lists have not been measured on 1.7 yet.
+Without the prewarm, deferring sound resolution only moved the decoding to after the main menu. With it, sounds are ready when the main menu appears and total startup is about 3 seconds shorter. Reaching the main menu takes slightly longer because the prewarm shares the CPU with startup. This Core-only comparison does not establish the full-startup gain for larger mod lists.
+
+Earlier exploratory runs of delayed graphics with the 1.7 texture-upload fix reached the main menu in 16.60–16.77 seconds from the FGL constructor, compared with 18.78–19.44 seconds with delayed graphics off. They also recorded a 1.10–1.20-second frame after the menu and about 130 MB more managed memory. These use a different timer from the Core-only table and do not establish a reduction in total startup time; the post-menu work must also be counted.
+
+On 2026-10-16, moving full-type-name warmup to the background was compared with synchronous warmup on RimWorld 1.7.4980 rev60, with Core, Harmony, VEF, VTEXE, Loading Progress, FGL and the test bridge. After warmup, three interleaved runs per variant gave main-menu medians of 8.793 seconds (synchronous) and 8.817 seconds (background), measured by Loading Progress from its first loading-window draw. FGL's post-menu work was +0.0 seconds in every run. The background runs ranged from 8.335 to 9.465 seconds, so this small mod list did not demonstrate a benefit from background type warmup. These timings use another starting point and cannot be directly compared with the earlier tables.
+
+Synchronous type warmup is retained so the cache is ready before XML parsing, without an additional background task or concurrent merge and cleanup behavior.
 
 ## Where the Time Is Saved
 
@@ -126,7 +132,7 @@ Important behavior:
 - Existing Image Opt safeguards, such as downscaled-texture bypass and invalid `.dds` / `.dds.zstd` cache cleanup, do not guarantee compatibility.
 - [Image Opt fork](https://steamcommunity.com/sharedfiles/filedetails/?id=3781013698) is an alternative to Image Opt, patched by its author for compatibility with Faster Game Loading. Load it after Faster Game Loading.
 - [Humanoid Alien Races](https://github.com/erdelf/AlienRaces) counts each race's texture variants as soon as its own textures are loaded. Faster Game Loading holds that count until all mod content has loaded, so variants from race mods that load later are not missed. With this in place, HAR and the race mods that depend on it are loaded early and have their XML parsed in parallel like other mods. If the hook cannot be found or patched, they are excluded from both again.
-- HAR (including its dev build) and Ancot-related race mods are not downscaled and stay out of **Adaptive atlas baking**, to reduce bodyAddon, hair, ear, and multi-mask texture issues. The same applies to [Pumpkin Library](https://steamcommunity.com/sharedfiles/filedetails/?id=3790461769) DDS texture packs that replace those mods' textures, as listed in Pumpkin Library's `TextureOverrideSettings.xml`. AyaTweaks and Ayameduki mods skip early loading and parallel XML parsing.
+- HAR (including its dev build) and Ancot-related race mods are not downscaled, to reduce bodyAddon, hair, ear, and multi-mask texture issues. The same applies to [Pumpkin Library](https://steamcommunity.com/sharedfiles/filedetails/?id=3790461769) DDS texture packs that replace those mods' textures, as listed in Pumpkin Library's `TextureOverrideSettings.xml`. AyaTweaks and Ayameduki mods skip early loading and parallel XML parsing.
 - With [ChezhouLib](https://steamcommunity.com/sharedfiles/filedetails/?id=3595247479), Faster Game Loading's guard against loading the same asset bundles twice runs before ChezhouLib's asset bundle loader.
 
 ## Recommended Settings
@@ -138,7 +144,7 @@ If loading is still slow:
 1. Keep **Load mod content early**, **Multi-threaded preloading**, and **Type lookup cache** enabled.
 2. For large texture-heavy mod lists, prefer Graphics Settings+ or RimSort Optimize Texture. Image Opt compatibility is no longer maintained; use [Image Opt fork](https://steamcommunity.com/sharedfiles/filedetails/?id=3781013698) instead.
 3. If you do not use an external texture tool, consider FGL's **Downscale textures** tool.
-4. Enable **Delay graphic and icon loading** or **Adaptive atlas baking** only if you are willing to troubleshoot compatibility issues.
+4. Enable **Delay graphic and icon loading** only if you are willing to troubleshoot compatibility issues.
 
 ## Building from Source
 

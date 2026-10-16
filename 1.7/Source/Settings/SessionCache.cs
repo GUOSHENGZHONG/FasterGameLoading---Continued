@@ -7,7 +7,7 @@ namespace FasterGameLoading;
 /// <summary>
 /// 跨 session 載入快取的持久化與失效政策。這些不是「使用者設定」，而是自動記錄的載入歷程，
 /// 僅因需要 Scribe 持久化而經由設定檔存放。資料本身歸各自的模組所有：
-/// 型別對照在 <see cref="TypeLookupCache"/>、烘焙速度在 <see cref="AdaptiveAtlasBaker"/>、
+/// 型別對照在 <see cref="TypeLookupCache"/>、
 /// 降質快取對照在 <see cref="TextureCacheManager"/>；這裡只記錄上次的 mod 清單，並在讀檔後決定哪些資料作廢。
 /// </summary>
 internal static class SessionCache
@@ -16,6 +16,12 @@ internal static class SessionCache
     /// 上一次 session 中啟用的 mod 列表（packageIdLowerCase）。
     /// </summary>
     internal static List<string> modsInLastSession { get; set; } = new();
+
+    /// <summary>
+    /// 1.6 自適應烘焙記錄的歷次烘焙速度。1.7 不使用自適應烘焙，這份資料只原樣讀寫，
+    /// 讓同一份設定檔切回 1.6 時不會遺失；1.7 不讀取其內容。
+    /// </summary>
+    internal static List<float> BakeSpeedHistory { get; set; } = new();
 
     /// <summary>
     /// 由 FasterGameLoadingSettings.ExposeData() 委派呼叫，
@@ -27,7 +33,9 @@ internal static class SessionCache
         var mods = modsInLastSession;
         Scribe_Collections.Look(ref mods, FGLConsts.ModsInLastSessionKey, LookMode.Value);
         modsInLastSession = mods;
-        AdaptiveAtlasBaker.ExposeBakeSpeedHistory();
+        var bakeSpeeds = BakeSpeedHistory;
+        Scribe_Collections.Look(ref bakeSpeeds, FGLConsts.HistoricalBakeSpeedsKey, LookMode.Value);
+        BakeSpeedHistory = bakeSpeeds ?? [];
 
         if (Scribe.mode is LoadSaveMode.PostLoadInit)
         {

@@ -12,9 +12,11 @@ namespace FasterGameLoading;
 /// 所以最後一列之上全是空白，大型圖集常有一半是空的；這些空白列照樣要讀回、產生 mipmap 與壓縮。
 /// 打包完成後，以實際用到的高度重新建立顏色紋理，並依新高度換算回傳的 UV 矩形，每張紋理的像素位置不變；
 /// Bake 接著依這些矩形繪製、建立遮罩與網格。
-/// 高度向上取整到 8 × 2^(mips - 1) 的倍數，讓每一層 mipmap 都符合 GPU 壓縮的 8 像素派送邊界；
+/// 新頁面沿用原版頁面的取樣設定（名稱、filterMode、wrapMode、anisoLevel、mipMapBias、minimumMipmapLevel）與 GPU 記憶體分類；
+/// 這些設定由原版 CreatePage 依成員紋理決定，重建頁面時必須原樣帶過去，否則會退回 Unity 預設值（例如 wrapMode 變回 Repeat）。
+/// 高度向上取整到 8 × 2^(mips - 1) 的倍數，讓每一層 mipmap 的高度都是 4 的倍數（區塊壓縮 BC／DXT 的最小單位）且保有餘裕；
 /// 最上方的紋理之上，每一層 mipmap 至少保留一列空白（原尺寸 2^(mips - 1) 列）：
-/// 圖集取樣會環繞，上下邊緣的濾波會讀到另一側，原版圖集在那裡一定有空白列，裁切後也保留。
+/// 雙線性／三線性濾波與 mipmap 縮小時，邊緣紋理會取樣到相鄰的列，保留空白列讓它讀到的是透明像素，與原版圖集上緣一定有空白列的情況一致。
 /// 打包器會遞迴呼叫自己重試，內層的結果經由外層回傳，因此只在最外層處理一次。
 ///
 /// Trims each static atlas to the height it uses.
@@ -23,10 +25,13 @@ namespace FasterGameLoading;
 /// atlases are often half empty; those rows are still read back, mipmapped and compressed.
 /// After packing, this recreates the colour texture at the height actually used and rescales the returned UV
 /// rects to it, so no texture moves by a pixel; Bake then draws, masks and builds meshes from those rects.
-/// The height is rounded up to a multiple of 8 x 2^(mips - 1), so GPU compression covers every mip level,
-/// and at least one empty row per mip level (2^(mips - 1) rows at full size) is kept above the top
-/// texture: atlas sampling wraps, so filtering at the top and bottom edges reads the opposite edge, where a
-/// vanilla atlas always has empty rows, and a trimmed one keeps them.
+/// The new page keeps the vanilla page's sampling settings (name, filterMode, wrapMode, anisoLevel, mipMapBias,
+/// minimumMipmapLevel) and GPU memory category; vanilla's CreatePage derives them from the member textures, so
+/// recreating the page must carry them over or they fall back to Unity defaults (e.g. wrapMode back to Repeat).
+/// The height is rounded up to a multiple of 8 x 2^(mips - 1), so every mip level's height stays a multiple of 4
+/// (the block-compression unit) with some headroom, and at least one empty row per mip level (2^(mips - 1) rows at
+/// full size) is kept above the top texture: bilinear/trilinear filtering and mip downsampling at the top edge read
+/// the neighbouring rows, and a vanilla atlas always has empty rows there, so a trimmed one keeps them.
 /// The packer calls itself to retry and the inner result returns through the outer call, so only the outermost
 /// call acts.
 /// </summary>
@@ -58,7 +63,7 @@ public static class StaticTextureAtlas_CalcRectsForAtlasNew_Patch
     public static int TrimmedHeight(int usedRows, int mipCount)
     {
         int lastMip = Math.Max(0, mipCount - 1);
-        // FastCompressDXT 使用高度 / 8 的整數派送；只對齊 DXT 的 4 像素會漏寫末端區塊。
+        // 每層 mipmap 的高度都對齊 8（至少是 DXT 區塊的 4 的倍數）；刻意比 4 像素寬鬆，維持與先前版本相同的裁切結果。
         int step = 8 << lastMip;
         int keptEmptyRows = 1 << lastMip;
         return (usedRows + keptEmptyRows + step - 1) / step * step;
@@ -75,6 +80,24 @@ public static class StaticTextureAtlas_CalcRectsForAtlasNew_Patch
             Mathf.RoundToInt(rect.y * oldHeight) / (float)newHeight,
             rect.width,
             Mathf.RoundToInt(rect.height * oldHeight) / (float)newHeight);
+
+    /// <summary>
+    /// 把原版頁面的名稱、取樣設定與 GPU 記憶體分類複製到重建的頁面。
+    /// Copies the vanilla page's name, sampling settings and GPU memory category to the recreated page.
+    /// </summary>
+    internal static void CopyPageSettings(Texture2D from, Texture2D to)
+    {
+        to.name = from.name;
+        to.filterMode = from.filterMode;
+        to.wrapMode = from.wrapMode;
+        to.anisoLevel = from.anisoLevel;
+        to.mipMapBias = from.mipMapBias;
+        to.minimumMipmapLevel = from.minimumMipmapLevel;
+        if (from.CoreTexture != null && to.CoreTexture != null)
+        {
+            to.CoreTexture.MemoryCategory = from.CoreTexture.MemoryCategory;
+        }
+    }
 
     private static void TrimToUsedRows(StaticTextureAtlas atlas, Rect[] rects)
     {
@@ -94,8 +117,10 @@ public static class StaticTextureAtlas_CalcRectsForAtlasNew_Patch
         {
             return;
         }
-        atlas.colorTexture = new Texture2D(color.width, trimmed, color.graphicsFormat, color.mipmapCount,
+        var trimmedPage = new Texture2D(color.width, trimmed, color.graphicsFormat, color.mipmapCount,
             TextureCreationFlags.MipChain | TextureCreationFlags.DontInitializePixels);
+        CopyPageSettings(color, trimmedPage);
+        atlas.colorTexture = trimmedPage;
         UnityEngine.Object.DestroyImmediate(color);
         for (int i = 0; i < rects.Length; i++)
         {

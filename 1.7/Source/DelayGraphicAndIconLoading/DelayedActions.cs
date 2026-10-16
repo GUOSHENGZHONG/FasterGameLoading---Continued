@@ -38,10 +38,9 @@ public class DelayedActions : MonoBehaviour
 
     // ── 啟動時定案的設定 ──
     private static bool? capturedDeferredVisuals;
-    private static bool? capturedAdaptiveBaking;
 
     /// <summary>
-    /// 由 Mod 建構子在 PatchAll 之前呼叫，把延遲視覺與自適應烘焙兩個設定定案到遊戲結束。
+    /// 由 Mod 建構子在 PatchAll 之前呼叫，把延遲視覺設定定案到遊戲結束。
     /// 相關補丁只在 PatchAll 時依 Prepare 套用一次；執行期若再讀設定頁的最新值，
     /// 會出現「補丁已套用、管線卻沒跑」的不一致（例如中途關閉延遲載入再切換語言，延遲佇列永遠不會排空）。
     /// 設定頁的變更因此要重新啟動遊戲才生效。
@@ -49,21 +48,30 @@ public class DelayedActions : MonoBehaviour
     internal static void CaptureStartupSettings()
     {
         capturedDeferredVisuals = FasterGameLoadingSettings.DelayGraphicLoading;
-        capturedAdaptiveBaking = FasterGameLoadingSettings.StaticAtlasesBaking;
     }
 
     /// <summary>單元測試用：回到「尚未定案」，之後直接讀設定值。</summary>
     internal static void ReleaseStartupSettingsForTests()
     {
         capturedDeferredVisuals = null;
-        capturedAdaptiveBaking = null;
+        adaptiveBakingForTests = null;
     }
 
     /// <summary>本次遊戲行程是否啟用延遲視覺管線。尚未定案時（只發生在單元測試）直接讀設定。</summary>
     internal static bool DeferredVisualsEnabled => capturedDeferredVisuals ?? FasterGameLoadingSettings.DelayGraphicLoading;
 
-    /// <summary>本次遊戲行程是否啟用自適應靜態圖集烘焙。尚未定案時（只發生在單元測試）直接讀設定。</summary>
-    internal static bool AdaptiveBakingEnabled => capturedAdaptiveBaking ?? FasterGameLoadingSettings.StaticAtlasesBaking;
+    private static bool? adaptiveBakingForTests;
+
+    /// <summary>
+    /// 本次遊戲行程是否啟用自適應靜態圖集烘焙。1.7 恆為 false，不看 <see cref="FasterGameLoadingSettings.StaticAtlasesBaking"/>：
+    /// 自適應烘焙繞過 1.7 原版烘焙的 EndDeferredLoading、圖集壓縮、圖集磁碟快取與來源紋理釋放，
+    /// 因此 1.7 一律走原版 BakeStaticAtlases；設定值仍照常存讀，切回 1.6 時保留。
+    /// 保護 Mod 的略過烘焙補丁（<see cref="AdaptiveBakingSkipList"/>）與 <see cref="ProtectedMods.ShouldSkipBaking"/> 因此在 1.7 不會生效。
+    /// </summary>
+    internal static bool AdaptiveBakingEnabled => adaptiveBakingForTests ?? false;
+
+    /// <summary>單元測試用：強制回報自適應烘焙的開關，以驗證略過烘焙的邏輯；傳入 null 還原為 1.7 的恆為 false。</summary>
+    internal static void SetAdaptiveBakingForTests(bool? enabled) => adaptiveBakingForTests = enabled;
 
     // ── 原版靜態圖集烘焙的放行 ──
     private static bool vanillaStaticBakeAllowed;
@@ -71,7 +79,7 @@ public class DelayedActions : MonoBehaviour
     /// <summary>
     /// 原版 GlobalTextureAtlasManager.BakeStaticAtlases 此刻是否可以執行。
     /// 延遲視覺管線關閉時一律放行；開啟時啟動流程那一次會被擋下，
-    /// 直到管線要以原版烘焙（自適應烘焙關閉或失敗時）才放行，之後也維持放行。
+    /// 直到管線進入圖集烘焙階段、要以原版烘焙時才放行，之後也維持放行。
     /// </summary>
     internal static bool AllowsVanillaStaticBake => !DeferredVisualsEnabled || vanillaStaticBakeAllowed;
 
@@ -197,7 +205,7 @@ public class DelayedActions : MonoBehaviour
                 Phase = DeferredPhase.Icons;
                 yield return LoadDeferredIconsCoroutine();
                 Phase = DeferredPhase.AtlasBake;
-                yield return BakeDeferredAtlasesCoroutine();
+                BakeDeferredAtlases();
                 UpdateMapMeshForLoadedDefs(loadedDefs);
             }
             Phase = DeferredPhase.Sounds;
@@ -216,33 +224,14 @@ public class DelayedActions : MonoBehaviour
     }
 
     /// <summary>
-    /// 執行靜態圖集烘焙：執行自適應烘焙，失敗時 fallback 到原版流程。
+    /// 執行靜態圖集烘焙：一律交給原版 BakeStaticAtlases（1.7 不使用自適應烘焙，見 <see cref="AdaptiveBakingEnabled"/>）。
     /// </summary>
-    private IEnumerator BakeDeferredAtlasesCoroutine()
+    private static void BakeDeferredAtlases()
     {
-        if (AdaptiveBakingEnabled)
-        {
-            var adaptiveBake = AdaptiveAtlasBaker.PerformAdaptiveStaticAtlasBake(this);
-            while (adaptiveBake.MoveNext())
-            {
-                yield return adaptiveBake.Current;
-            }
-
-            if (AdaptiveAtlasBaker.LastBakeFailed)
-            {
-                FGLLog.Warning("Adaptive bake failed, falling back to vanilla static atlas baking");
-                AtlasBakeDiagnostics.LogPotentialMaskIssues("deferred fallback");
-                BakeStaticAtlasesWithVanilla();
-                FGLLog.Message("Vanilla static atlas baking complete");
-            }
-        }
-        else
-        {
-            FGLLog.Message("Starting deferred vanilla static atlas baking");
-            AtlasBakeDiagnostics.LogPotentialMaskIssues("deferred vanilla");
-            BakeStaticAtlasesWithVanilla();
-            FGLLog.Message("Deferred vanilla static atlas baking complete");
-        }
+        FGLLog.Message("Starting deferred vanilla static atlas baking");
+        AtlasBakeDiagnostics.LogPotentialMaskIssues("deferred vanilla");
+        BakeStaticAtlasesWithVanilla();
+        FGLLog.Message("Deferred vanilla static atlas baking complete");
     }
 
     private static void BakeStaticAtlasesWithVanilla()

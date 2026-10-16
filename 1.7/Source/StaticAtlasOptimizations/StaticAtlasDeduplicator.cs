@@ -31,9 +31,10 @@ public static class StaticAtlasDeduplicator
     private static readonly TextureAtlasGroup[] CopyGroups = [TextureAtlasGroup.Item, TextureAtlasGroup.Misc];
     private static readonly bool[] MaskStates = [false, true];
 
-    // 以反射讀取私有的 buildQueue：單元測試在 .NET 上執行，Publicizer 的存取略過在那裡無效，直接存取會拋 FieldAccessException。
-    // Reads the private buildQueue by reflection: the unit tests run on .NET, where the Publicizer's access bypass does not
-    // apply and direct access throws FieldAccessException.
+    // 以反射讀取私有的 buildQueue：Publicizer 只讓編譯通過，直接存取在 .NET 10（CoreCLR）上會拋 FieldAccessException（單元測試已實測），
+    // 因此不依賴遊戲執行環境是否放寬存取檢查。
+    // Reads the private buildQueue by reflection: the Publicizer only makes it compile, and direct access throws
+    // FieldAccessException on .NET 10 (CoreCLR; confirmed by the unit tests), so this does not depend on the game's runtime relaxing access checks.
     private static readonly FieldInfo BuildQueueField = AccessTools.Field(typeof(GlobalTextureAtlasManager), nameof(GlobalTextureAtlasManager.buildQueue));
 
     private static readonly HashSet<(Texture2D texture, TextureAtlasGroup group)> droppedCopies = new();
@@ -59,11 +60,10 @@ public static class StaticAtlasDeduplicator
         => droppedCopies.Count > 0 && droppedCopies.Contains((texture, group));
 
     /// <summary>
-    /// 在確定會執行的烘焙之前呼叫：原版烘焙由 <see cref="GlobalTextureAtlasManager_BakeStaticAtlases_DeduplicatePatch"/> 呼叫，
-    /// 自適應烘焙由 <see cref="AdaptiveAtlasBaker"/> 呼叫。重複呼叫是安全的，第二次不會再找到重複項目。
+    /// 在確定會執行的烘焙之前呼叫：原版烘焙由 <see cref="GlobalTextureAtlasManager_BakeStaticAtlases_DeduplicatePatch"/> 呼叫。重複呼叫是安全的，第二次不會再找到重複項目。
     ///
     /// Called just before a bake that will run: by <see cref="GlobalTextureAtlasManager_BakeStaticAtlases_DeduplicatePatch"/>
-    /// for vanilla's bake, and by <see cref="AdaptiveAtlasBaker"/> for the adaptive bake. Calling it again is safe;
+    /// for vanilla's bake. Calling it again is safe;
     /// the second call finds nothing left to remove.
     /// </summary>
     public static void RemoveDuplicateCopies()

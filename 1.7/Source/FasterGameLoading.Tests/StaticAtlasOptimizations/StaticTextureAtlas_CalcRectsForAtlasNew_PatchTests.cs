@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using UnityEngine;
+using Waylith.Graphics;
 
 namespace FasterGameLoading.Tests.StaticAtlasOptimizations;
 [TestFixture]
@@ -7,15 +8,14 @@ public class StaticTextureAtlas_CalcRectsForAtlasNew_PatchTests
 {
     [TestCase(194, 1)]
     [TestCase(306, 2)]
-    public void TrimmedHeight_GpuCompressionDispatchCoversEveryRow(int usedRows, int mipCount)
+    public void TrimmedHeight_EveryMipLevelHeightIsBlockAligned(int usedRows, int mipCount)
     {
         int height = StaticTextureAtlas_CalcRectsForAtlasNew_Patch.TrimmedHeight(usedRows, mipCount);
         for (int mip = 0; mip < mipCount; mip++)
         {
             int mipHeight = height >> mip;
-            // 原版 FastCompressDXT 以整數除以 8 派送，尾端不足一組的列完全不會寫入。
-            int compressedRows = mipHeight / 8 * 8;
-            Assert.That(compressedRows, Is.EqualTo(mipHeight), $"mip {mip} must be fully covered by GPU compression");
+            // 區塊壓縮（BC／DXT）以 4 × 4 為單位；每層 mipmap 的高度都必須是 4 的倍數，這裡取更保守的 8。
+            Assert.That(mipHeight % 8, Is.EqualTo(0), $"mip {mip} must be fully covered by block compression");
         }
     }
 
@@ -28,7 +28,7 @@ public class StaticTextureAtlas_CalcRectsForAtlasNew_PatchTests
     [TestCase(124, 1, 128)]
     [TestCase(0, 3, 32)]
     [TestCase(100, 0, 104)]
-    public void TrimmedHeight_KeepsOneEmptyRowPerMipLevelInWholeGpuCompressionGroups(int usedRows, int mipCount, int expected)
+    public void TrimmedHeight_KeepsOneEmptyRowPerMipLevelInBlockAlignedSteps(int usedRows, int mipCount, int expected)
     {
         Assert.That(StaticTextureAtlas_CalcRectsForAtlasNew_Patch.TrimmedHeight(usedRows, mipCount), Is.EqualTo(expected));
     }
@@ -41,9 +41,38 @@ public class StaticTextureAtlas_CalcRectsForAtlasNew_PatchTests
         int height = StaticTextureAtlas_CalcRectsForAtlasNew_Patch.TrimmedHeight(usedRows, mipCount);
         int lastMip = mipCount - 1;
 
-        Assert.That((height >> lastMip) % 8, Is.EqualTo(0), "the smallest mip level must be fully covered by GPU compression");
+        Assert.That((height >> lastMip) % 8, Is.EqualTo(0), "the smallest mip level must be block-aligned");
         Assert.That(height - usedRows, Is.GreaterThanOrEqualTo(1 << lastMip), "one empty row per mip level stays above the top texture");
-        Assert.That(height - usedRows - (1 << lastMip), Is.LessThan(8 << lastMip), "no more than one dispatch group of rounding");
+        Assert.That(height - usedRows - (1 << lastMip), Is.LessThan(8 << lastMip), "no more than one rounding step");
+    }
+
+    [Test]
+    public void CopyPageSettings_CarriesSamplingSettingsOver()
+    {
+        var from = new Texture2D(16, 16)
+        {
+            name = "TextureAtlas_Working",
+            filterMode = FilterMode.Trilinear,
+            wrapMode = TextureWrapMode.Clamp,
+            anisoLevel = 8,
+            mipMapBias = -0.5f,
+            minimumMipmapLevel = 0,
+        };
+        var to = new Texture2D(16, 8);
+        from.CoreTexture.MemoryCategory = GpuMemoryCategory.Atlas;
+
+        StaticTextureAtlas_CalcRectsForAtlasNew_Patch.CopyPageSettings(from, to);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(to.name, Is.EqualTo("TextureAtlas_Working"));
+            Assert.That(to.filterMode, Is.EqualTo(FilterMode.Trilinear));
+            Assert.That(to.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
+            Assert.That(to.anisoLevel, Is.EqualTo(8));
+            Assert.That(to.mipMapBias, Is.EqualTo(-0.5f));
+            Assert.That(to.minimumMipmapLevel, Is.EqualTo(0));
+            Assert.That(to.CoreTexture.MemoryCategory, Is.EqualTo(GpuMemoryCategory.Atlas));
+        });
     }
 
     [Test]
