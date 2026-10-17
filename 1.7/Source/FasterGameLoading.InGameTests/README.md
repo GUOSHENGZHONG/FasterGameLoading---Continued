@@ -56,6 +56,14 @@ Smoke Test 的 `Mod/Configs/SmokeTestConfig.xml` 只允許兩種模組相依宣�
 
 DevTools 的 **Benchmark** 頁提供 `FGL type lookup`，比較遊戲內重複型別查詢；這是熱路徑基準測試，不能代替完整啟動計時。開發模組亦保留 `Round N timing` 日誌，記錄啟動起算秒數、GC、主執行緒檔案讀取與一次完整型別列舉。
 
+此頁也提供 GenTypes 完整名稱加命名空間提示的快取／reverse-patch 原版對照。另可在 NUnit 專案手動執行 `TypeLookupBenchmarks` 的兩個 Explicit 基準，量測 Prefix／Postfix 的執行緒配置量與已列舉組件的全名預熱；平常測試不執行它們：
+
+```powershell
+dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj -c Release --settings test.runsettings --filter FullyQualifiedName~TypeLookupBenchmarks --logger "console;verbosity=normal"
+```
+
+這兩個基準不包含首次組件列舉、Harmony 包裝或完整遊戲啟動，不能直接換算成遊戲加速百分比。
+
 正式比較啟動速度時，到主選單的秒數讀取 Loading Progress 隔離 session 設定檔的 `loadingTimes` 最後一筆；以 `seed_config` 開啟 `trackStartupLoadingImpact` 可拆分模組與階段。主選單後的延遲圖形、圖集與音效，需另開 FGL `verboseLogging`，讀 Player.log 的 `Startup timing after the main menu appeared`。移動工作到主選單後會讓前段數字變短，不能單憑它宣稱總啟動變快。
 
 DevTools 遷移本身不會進入玩家版執行路徑。遊戲內驗證另外找出兩項 1.7 紋理問題：背景 PNG 編碼的列序，以及非 UI 快取紋理經 `LoadImage` 後遺失 mipmap。前者在手動重建快取時多做一次輸出像素列複製，不影響一般啟動；後者只在非 UI 縮小紋理快取命中時，額外配置一張貼圖並複製像素來建立 mipmap，可能增加這類啟動的 CPU 與記憶體用量。未做相同模組清單的前後計時，因此沒有量化的秒數差異。

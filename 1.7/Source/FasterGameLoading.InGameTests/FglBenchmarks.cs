@@ -2,6 +2,7 @@ using System;
 using DevTools.Benchmarking;
 using HarmonyLib;
 using LudeonTK;
+using Verse;
 
 namespace FasterGameLoading.InGameTests
 {
@@ -18,5 +19,11 @@ namespace FasterGameLoading.InGameTests
 
         [Benchmark(Label = "Unpatched AccessTools.TypeByName")]
         private static Type VanillaTypeByName() => VanillaReflection.TypeByName(TypeName);
+
+        [Benchmark(Label = "GenTypes full name with namespace")]
+        private static Type CachedGenTypes() => GenTypes.GetTypeInAnyAssemblyInt(TypeName, "Verse");
+
+        [Benchmark(Label = "Unpatched GenTypes full name with namespace")]
+        private static Type VanillaGenTypes() => VanillaLookup.GetTypeInAnyAssemblyInt(TypeName, "Verse");
     }
 }

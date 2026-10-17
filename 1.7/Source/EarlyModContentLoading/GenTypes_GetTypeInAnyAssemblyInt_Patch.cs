@@ -45,7 +45,7 @@ public static class GenTypes_GetTypeInAnyAssemblyInt_Patch
     internal static void WarmupFullNames(IEnumerable<Assembly> assembliesInSearchOrder)
     {
         // 不分大小寫的名稱 → 第一次出現的拼法，用來找出只差大小寫的名稱。
-        var firstSpelling = new Dictionary<string, string>(CaseInsensitiveNameComparer.Instance);
+        var firstSpelling = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         List<string> caseCollisions = null;
         foreach (var assembly in assembliesInSearchOrder)
         {
@@ -99,40 +99,21 @@ public static class GenTypes_GetTypeInAnyAssemblyInt_Patch
     }
 
     /// <summary>
-    /// 與 <see cref="StringComparison.OrdinalIgnoreCase"/> 等價的比較（逐字元以 ToUpperInvariant 折疊），雜湊逐字元折疊、不配置字串。
-    /// 遊戲內同一行程實測 21,017 個型別：只做大小寫相符 TryAdd 的舊寫法約 100 ms，
-    /// 改用 StringComparer.OrdinalIgnoreCase 字典並再讀一次 FullName 約 205 ms，本寫法（每個型別只讀一次 FullName）約 106 ms。
-    /// </summary>
-    private sealed class CaseInsensitiveNameComparer : IEqualityComparer<string>
-    {
-        public static readonly CaseInsensitiveNameComparer Instance = new();
-
-        public bool Equals(string x, string y) => string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
-
-        public int GetHashCode(string obj)
-        {
-            unchecked
-            {
-                int hash = (int)2166136261;
-                foreach (char c in obj)
-                {
-                    char folded = c < 128
-                        ? (c is >= 'a' and <= 'z' ? (char)(c - 32) : c)
-                        : char.ToUpperInvariant(c);
-                    hash = (hash ^ folded) * 16777619;
-                }
-                return hash;
-            }
-        }
-    }
-
-    /// <summary>
     /// 前置處理：優先使用執行期型別快取或跨 session 快取比對，命中時返回並跳過原方法。
     /// </summary>
     public static bool Prefix(ref Type __result, out (string originalTypeName, string namespaceIfAmbiguous, string cacheKey, bool isCached, bool usedSessionMapping) __state, ref string typeName, string namespaceIfAmbiguous)
     {
+        // 原版先以原名查詢，完整名稱命中與命名空間提示無關。
+        // 在建立組合鍵之前處理 XML 常見的 Class= 全名；Postfix 不需為相同全名記錄 session 對照。
+        if (TryGetExactFullName(typeName, namespaceIfAmbiguous, out var result))
+        {
+            __result = result;
+            __state = (typeName, namespaceIfAmbiguous, typeName, true, false);
+            return false;
+        }
+
         var cacheKey = MakeCacheKey(typeName, namespaceIfAmbiguous);
-        if (cachedResults.TryGetValue(cacheKey, out var result) || TryGetExactFullName(typeName, namespaceIfAmbiguous, out result))
+        if (cachedResults.TryGetValue(cacheKey, out result))
         {
             __result = result;
             __state = (typeName, namespaceIfAmbiguous, cacheKey, true, false);

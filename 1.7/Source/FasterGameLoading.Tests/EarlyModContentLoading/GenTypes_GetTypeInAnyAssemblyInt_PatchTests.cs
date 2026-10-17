@@ -84,6 +84,36 @@ public class GenTypes_GetTypeInAnyAssemblyInt_PatchTests
     }
 
     [Test]
+    public void ExactFullNameHit_DoesNotRecordNamespaceMapping_AndInvalidates()
+    {
+        string name = typeof(Verse.ThingDef).FullName;
+        GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults[name] = typeof(Verse.ThingDef);
+        Type result = null;
+        Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.Prefix(ref result, out var state, ref name, "Other.Namespace"), Is.False);
+        GenTypes_GetTypeInAnyAssemblyInt_Patch.Postfix(ref result, state);
+        Assert.That(result, Is.EqualTo(typeof(Verse.ThingDef)));
+        Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.loadedTypesThisSession, Is.Empty);
+        Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults.Count, Is.EqualTo(1));
+
+        TypeLookupCache.Invalidate();
+        result = null;
+        Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.Prefix(ref result, out _, ref name, "Other.Namespace"), Is.True);
+        Assert.That(result, Is.Null);
+    }
+
+    [Test]
+    public void NamespaceSpecificHit_StillWinsForProbedShortName()
+    {
+        GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults["ThingDef"] = typeof(Verse.ThingDef);
+        GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults["ThingDef|ns|Other"] = typeof(string);
+        string name = "ThingDef";
+        Type result = null;
+        Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.Prefix(ref result, out var state, ref name, "Other"), Is.False);
+        Assert.That(result, Is.EqualTo(typeof(string)));
+        Assert.That(state.cacheKey, Is.EqualTo("ThingDef|ns|Other"));
+    }
+
+    [Test]
     public void Prefix_WithNamespaceHint_DoesNotServeEntryResolvedByNamespaceProbing()
     {
         // "AI.JobDriver_Wait" 是在命名空間探測後才解析出 Verse.AI.JobDriver_Wait；
@@ -141,6 +171,30 @@ public class GenTypes_GetTypeInAnyAssemblyInt_PatchTests
 
         Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults.ContainsKey("Amb.Case"), Is.False);
         Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults.ContainsKey("Amb.case"), Is.False);
+    }
+
+    [Test]
+    public void WarmupFullNames_SupplementaryUnicodeCasePair_UsesVanillaFallback()
+    {
+        const string upper = "Unicode.\U00010400";
+        const string lower = "Unicode.\U00010428";
+        Assert.That(StringComparer.OrdinalIgnoreCase.Equals(upper, lower), Is.True);
+        var first = DefineTypes("FglUnicodeFirst", lower);
+        var second = DefineTypes("FglUnicodeSecond", upper);
+
+        GenTypes_GetTypeInAnyAssemblyInt_Patch.WarmupFullNames([first, second]);
+
+        Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults.ContainsKey(upper), Is.False);
+        Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults.ContainsKey(lower), Is.False);
+        // OrdinalIgnoreCase 可能比 Assembly.GetType 的 Unicode 比對更保守；不得自行選擇先出現者，應交回原版。
+        foreach (var name in new[] { upper, lower })
+        {
+            string query = name;
+            Type result = null;
+            Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.Prefix(ref result, out _, ref query, "Verse"), Is.True);
+            Assert.That(result, Is.Null);
+            Assert.That(VanillaIgnoreCaseSearch(query, first, second), Is.Not.Null);
+        }
     }
 
     [Test]

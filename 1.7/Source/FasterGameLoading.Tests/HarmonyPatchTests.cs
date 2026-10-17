@@ -161,9 +161,10 @@ public class HarmonyPatchTests
 
         var mockList = new List<Type> { typeof(string), typeof(int), typeof(double) };
         fieldCached.SetValue(null, mockList);
-        fieldCount.SetValue(null, AppDomain.CurrentDomain.GetAssemblies().Length);
         typeof(AccessTools_AllTypes_Patch).GetField("cachedDynamicTypeCount", BindingFlags.NonPublic | BindingFlags.Static)
             .SetValue(null, FasterGameLoading.Tests.EarlyModContentLoading.AccessTools_AllTypes_PatchTests.CurrentDynamicTypeCount());
+        // 動態型別列舉可能觸發額外組件載入；最後才拍組件數快照，避免測試自行建立失效的假快取。
+        fieldCount.SetValue(null, AppDomain.CurrentDomain.GetAssemblies().Length);
 
         // 2. 呼叫 AccessTools.AllTypes()
         var result = AccessTools.AllTypes();
