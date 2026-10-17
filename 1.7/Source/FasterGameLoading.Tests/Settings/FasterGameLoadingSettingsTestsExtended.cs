@@ -9,16 +9,16 @@ public class FasterGameLoadingSettingsExtendedTests
     public void DefaultValues_AreSet()
     {
         // 驗證預設值符合預期（不實際修改，僅讀取確認存在）
-        Assert.That(FasterGameLoading.FasterGameLoadingSettings.TrimStaticAtlases, Is.True);
-        Assert.That(FasterGameLoading.FasterGameLoadingSettings.DeduplicateStaticAtlases, Is.True);
-        Assert.That(FasterGameLoading.FasterGameLoadingSettings.EnableMultiThreading, Is.True);
-        Assert.That(FasterGameLoading.FasterGameLoadingSettings.TypeLookupCache, Is.True);
+        Assert.That(FasterGameLoadingSettings.TrimStaticAtlases, Is.True);
+        Assert.That(FasterGameLoadingSettings.DeduplicateStaticAtlases, Is.True);
+        Assert.That(FasterGameLoadingSettings.EnableMultiThreading, Is.True);
+        Assert.That(FasterGameLoadingSettings.TypeLookupCache, Is.True);
     }
 
     [Test]
     public void EarlyModContentLoading_FieldExists()
     {
         // 確認為 loading-progress 整合而保留的公開欄位仍存在
-        Assert.That(FasterGameLoading.FasterGameLoadingSettings.earlyModContentLoading, Is.True);
+        Assert.That(FasterGameLoadingSettings.earlyModContentLoading, Is.True);
     }
 }

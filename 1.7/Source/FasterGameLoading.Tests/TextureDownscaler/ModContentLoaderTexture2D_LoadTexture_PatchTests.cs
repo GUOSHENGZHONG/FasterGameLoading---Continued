@@ -407,7 +407,7 @@ public class ModContentLoaderTexture2D_LoadTexture_PatchTests
     [Test]
     public void StartPreloadCachedTextures_WhenFilesExist_LoadsBytesIntoPreloadMap()
     {
-        var mod = (FasterGameLoadingMod)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(FasterGameLoadingMod));
+        var mod = (FasterGameLoadingMod)FormatterServices.GetUninitializedObject(typeof(FasterGameLoadingMod));
         var mgr = new TextureCacheManager(tempDir);
         string sampleFile = Path.Combine(tempDir, "preloaded.png");
         File.WriteAllBytes(sampleFile, [1, 2, 3, 4]);

@@ -111,8 +111,8 @@ namespace FasterGameLoading.InGameTests
             if (ReferenceEquals(a, b)) return true;
             return b != null
                 && a.GetType() == b.GetType()
-                && string.Equals(a.path, b.path, System.StringComparison.Ordinal)
-                && string.Equals(a.maskPath, b.maskPath, System.StringComparison.Ordinal)
+                && string.Equals(a.path, b.path, StringComparison.Ordinal)
+                && string.Equals(a.maskPath, b.maskPath, StringComparison.Ordinal)
                 && a.Shader == b.Shader
                 && a.drawSize == b.drawSize
                 && ((Color32)a.color).Equals((Color32)b.color)

@@ -79,7 +79,7 @@ public class World_FinalizeInit_PatchTests
     [Test]
     public void Patch_IsRegisteredForWorldFinalizeInit()
     {
-        var patch = (HarmonyPatch)System.Attribute.GetCustomAttribute(
+        var patch = (HarmonyPatch)Attribute.GetCustomAttribute(
             typeof(World_FinalizeInit_Patch), typeof(HarmonyPatch));
 
         Assert.That(patch, Is.Not.Null);

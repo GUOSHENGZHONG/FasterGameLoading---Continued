@@ -98,7 +98,7 @@ public class StartupTests
         var meta = (ModMetaData)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(ModMetaData));
         AccessTools.Field(typeof(ModMetaData), "packageIdLowerCase").SetValue(meta, "test.mod.package");
 
-        var activeModsGetter = AccessTools.PropertyGetter(typeof(Verse.ModsConfig), nameof(Verse.ModsConfig.ActiveModsInLoadOrder));
+        var activeModsGetter = AccessTools.PropertyGetter(typeof(Verse.ModsConfig), nameof(ModsConfig.ActiveModsInLoadOrder));
         var harmonyInstance = new Harmony("test.startup.activemods");
         var stubList = new List<ModMetaData> { null, meta };
         harmonyInstance.Patch(activeModsGetter, prefix: new HarmonyMethod(AccessTools.Method(typeof(StartupTests), nameof(Prefix_StubActiveMods))));
@@ -138,7 +138,7 @@ public class StartupTests
     public void ScheduleDeferredStartupActions_WhenExecuteWhenFinished_InvokesCallbackSafely()
     {
         var harmonyInstance = new Harmony("test.startup.deferred.success");
-        var method = AccessTools.Method(typeof(Verse.LongEventHandler), nameof(Verse.LongEventHandler.ExecuteWhenFinished), [typeof(Action)]);
+        var method = AccessTools.Method(typeof(Verse.LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished), [typeof(Action)]);
         harmonyInstance.Patch(method, prefix: new HarmonyMethod(AccessTools.Method(typeof(StartupTests), nameof(Prefix_ExecuteWhenFinishedImmediately))));
 
         try
@@ -156,7 +156,7 @@ public class StartupTests
     public void ScheduleDeferredStartupActions_WhenExecuteWhenFinishedThrows_LogsError()
     {
         var harmonyInstance = new Harmony("test.startup.deferred.throw");
-        var method = AccessTools.Method(typeof(Verse.LongEventHandler), nameof(Verse.LongEventHandler.ExecuteWhenFinished), [typeof(Action)]);
+        var method = AccessTools.Method(typeof(Verse.LongEventHandler), nameof(LongEventHandler.ExecuteWhenFinished), [typeof(Action)]);
         harmonyInstance.Patch(method, prefix: new HarmonyMethod(AccessTools.Method(typeof(StartupTests), nameof(Prefix_ExecuteWhenFinishedThrows))));
         var errors = new List<string>();
         var previousOnLogError = TestSetup.OnLogError;

@@ -54,14 +54,14 @@ public class TestSetup
             var opEqualityHarmony = new HarmonyLib.Harmony("FasterGameLoading.Tests.HeadlessEnvironment");
             var opEq = HarmonyLib.AccessTools.Method(typeof(UnityEngine.Object), "op_Equality", [typeof(UnityEngine.Object), typeof(UnityEngine.Object)]);
             var opIneq = HarmonyLib.AccessTools.Method(typeof(UnityEngine.Object), "op_Inequality", [typeof(UnityEngine.Object), typeof(UnityEngine.Object)]);
-            var prefixOpEq = new HarmonyLib.HarmonyMethod(typeof(TestSetup).GetMethod(nameof(Prefix_OpEqualityStub), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic));
-            var prefixOpIneq = new HarmonyLib.HarmonyMethod(typeof(TestSetup).GetMethod(nameof(Prefix_OpInequalityStub), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic));
+            var prefixOpEq = new HarmonyLib.HarmonyMethod(typeof(TestSetup).GetMethod(nameof(Prefix_OpEqualityStub), BindingFlags.Static | BindingFlags.NonPublic));
+            var prefixOpIneq = new HarmonyLib.HarmonyMethod(typeof(TestSetup).GetMethod(nameof(Prefix_OpInequalityStub), BindingFlags.Static | BindingFlags.NonPublic));
             if (opEq != null) opEqualityHarmony.Patch(opEq, prefix: prefixOpEq);
             if (opIneq != null) opEqualityHarmony.Patch(opIneq, prefix: prefixOpIneq);
         }
         catch (Exception ex)
         {
-            System.Console.WriteLine("[TestSetup] op_Equality patch failed: " + ex.GetType().Name + ": " + ex.Message);
+            Console.WriteLine("[TestSetup] op_Equality patch failed: " + ex.GetType().Name + ": " + ex.Message);
         }
 
         // 隔離會連鎖觸發 ECall 的靜態建構函式（ModsConfig/ShaderDatabase/BaseContent），
@@ -69,7 +69,7 @@ public class TestSetup
         try
         {
             var staticCtorHarmony = new HarmonyLib.Harmony("FasterGameLoading.Tests.StaticCtorIsolation");
-            var prefixFalse = new HarmonyLib.HarmonyMethod(typeof(TestSetup).GetMethod(nameof(Prefix_FalseStub), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic));
+            var prefixFalse = new HarmonyLib.HarmonyMethod(typeof(TestSetup).GetMethod(nameof(Prefix_FalseStub), BindingFlags.Static | BindingFlags.NonPublic));
             foreach (var cctorType in new System.Type[] {
                 typeof(Verse.ModsConfig),
                 typeof(Verse.ShaderDatabase),
@@ -78,18 +78,18 @@ public class TestSetup
             {
                 try
                 {
-                    var cctor = cctorType.GetConstructor(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic, null, System.Type.EmptyTypes, null);
+                    var cctor = cctorType.GetConstructor(BindingFlags.Static | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
                     if (cctor != null) staticCtorHarmony.Patch(cctor, prefix: prefixFalse);
                 }
                 catch (Exception ex)
                 {
-                    System.Console.WriteLine("[TestSetup] cctor patch failed for " + cctorType.FullName + ": " + ex.GetType().Name + ": " + ex.Message);
+                    Console.WriteLine("[TestSetup] cctor patch failed for " + cctorType.FullName + ": " + ex.GetType().Name + ": " + ex.Message);
                 }
             }
         }
         catch (Exception ex)
         {
-            System.Console.WriteLine("[TestSetup] cctor patch setup failed: " + ex.GetType().Name + ": " + ex.Message);
+            Console.WriteLine("[TestSetup] cctor patch setup failed: " + ex.GetType().Name + ": " + ex.Message);
         }
 
         // 以 mock 取代 Verse.Prefs 資料，避免偏好設定檔案存取。
