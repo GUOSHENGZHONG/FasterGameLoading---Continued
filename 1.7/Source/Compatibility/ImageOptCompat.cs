@@ -144,14 +144,8 @@ public static class ImageOptCompat
         {
             using var stream = File.OpenRead(path);
             var buffer = new byte[magic.Length];
-            int read = 0;
-            while (read < magic.Length)
-            {
-                int n = stream.Read(buffer, read, magic.Length - read);
-                if (n is 0) return false;
-                read += n;
-            }
-            return buffer.SequenceEqual(magic);
+            int read = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
+            return read == buffer.Length && buffer.SequenceEqual(magic);
         }
         catch
         {

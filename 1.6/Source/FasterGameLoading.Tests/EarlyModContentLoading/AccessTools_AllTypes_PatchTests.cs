@@ -112,6 +112,7 @@ namespace FasterGameLoading.Tests.EarlyModContentLoading
             CachedAssembliesCountField.SetValue(null, 0);
 
             IEnumerable<Type> result = null;
+            int countBeforeRebuild = AppDomain.CurrentDomain.GetAssemblies().Length;
             bool shouldRunOriginal = AccessTools_AllTypes_Patch.Prefix(ref result);
 
             Assert.That(shouldRunOriginal, Is.False);
@@ -122,8 +123,8 @@ namespace FasterGameLoading.Tests.EarlyModContentLoading
 
             Assert.That(cached, Is.Not.Null);
             Assert.That(cached.Count, Is.GreaterThan(0));
-            // Assembly count may increase during test run (flaky); use >= to allow for concurrent loads
-            Assert.That(cachedCount, Is.GreaterThanOrEqualTo(AppDomain.CurrentDomain.GetAssemblies().Length - 1));
+            // 重建記錄開始列舉時的快照；列舉與斷言期間仍可能載入任意數量的新組件。
+            Assert.That(cachedCount, Is.InRange(countBeforeRebuild, AppDomain.CurrentDomain.GetAssemblies().Length));
             Assert.That(result, Is.SameAs(cached));
         }
 

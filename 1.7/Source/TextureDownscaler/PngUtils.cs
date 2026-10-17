@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.Buffers.Binary;
+using System.IO;
 
 namespace FasterGameLoading;
 
@@ -28,8 +30,8 @@ public static class PngUtils
         if (stream.Read(header, 0, header.Length) != header.Length) return false;
         if (header[0] is not 0x89 || header[1] is not 0x50 || header[2] is not 0x4E || header[3] is not 0x47) return false;
 
-        int parsedWidth = ReadBigEndianInt32(header, 16);
-        int parsedHeight = ReadBigEndianInt32(header, 20);
+        int parsedWidth = BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(16, 4));
+        int parsedHeight = BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(20, 4));
         // 拒絕超出合理範圍的尺寸，防止損毀標頭傳播異常巨大的數值
         const int MaxSafeDimension = 16384;
         if (parsedWidth <= 0 || parsedHeight <= 0 || parsedWidth > MaxSafeDimension || parsedHeight > MaxSafeDimension)
@@ -40,10 +42,5 @@ public static class PngUtils
         width = parsedWidth;
         height = parsedHeight;
         return true;
-    }
-
-    private static int ReadBigEndianInt32(byte[] bytes, int offset)
-    {
-        return (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
     }
 }

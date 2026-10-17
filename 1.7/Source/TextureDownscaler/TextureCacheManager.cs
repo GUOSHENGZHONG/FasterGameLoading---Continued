@@ -625,17 +625,7 @@ public class TextureCacheManager
     /// 檢查檔案是否存在；路徑無效或權限不足時一律視為「不存在」，
     /// 交由呼叫端把對應的快取項目當作失效處理。
     /// </summary>
-    private static bool SafeFileExists(string path)
-    {
-        try
-        {
-            return File.Exists(path);
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    private static bool SafeFileExists(string path) => File.Exists(path);
 
     /// <summary>把路徑正規化後加入集合；無法正規化時退回使用原始字串。</summary>
     private static void AddResolvedPath(HashSet<string> set, string path)

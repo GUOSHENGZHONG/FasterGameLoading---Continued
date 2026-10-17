@@ -38,7 +38,7 @@ namespace FasterGameLoading
 
             if (!FasterGameLoadingSettings.EnableMultiThreading)
             {
-                EnumerateTypesOnMainThread(assembliesSnapshot, snapshotCount, dynamicTypeCount);
+                StoreTypes(BuildTypeList(assembliesSnapshot), snapshotCount, dynamicTypeCount);
                 return;
             }
 
@@ -55,14 +55,6 @@ namespace FasterGameLoading
             //
             // FullName 預熱由 GenTypes_GetTypeInAnyAssemblyInt_Patch.WarmupFullNames 在 Mod 建構子（載入事件緒）完成。
             EnumerateTypesInBackground(assembliesSnapshot, snapshotCount, dynamicTypeCount);
-        }
-
-        /// <summary>
-        /// 關閉多執行緒時，在當前執行緒列舉型別；FullName 由 Mod 建構子另行預熱。
-        /// </summary>
-        private static void EnumerateTypesOnMainThread(Assembly[] assembliesSnapshot, int snapshotCount, int dynamicTypeCount)
-        {
-            StoreTypes(BuildTypeList(assembliesSnapshot), snapshotCount, dynamicTypeCount);
         }
 
         /// <summary>背景緒僅做型別「列舉」，不讀取 FullName（原因見 Preload 的說明）。</summary>
