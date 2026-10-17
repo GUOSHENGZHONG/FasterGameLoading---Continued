@@ -9,9 +9,7 @@ namespace FasterGameLoading
 {
     internal static class TranslationInjector
     {
-        /// <summary>
-        /// 原版 LoadedLanguage.LoadFromFile_Keyed 為 private，直接呼叫會觸發 MethodAccessException，故經由委派呼叫。
-        /// </summary>
+        // 原版 LoadedLanguage.LoadFromFile_Keyed 為 private，直接呼叫會觸發 MethodAccessException，故經由委派呼叫。
         private static readonly Action<LoadedLanguage, VirtualFile, string> LoadFromFileKeyed =
             AccessTools.MethodDelegate<Action<LoadedLanguage, VirtualFile, string>>(
                 AccessTools.Method(typeof(LoadedLanguage), "LoadFromFile_Keyed"));
@@ -52,7 +50,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>注入目前語言；預設語言不同時也注入，讓原版 Translate() 能逐一退回。</summary>
+        // 注入目前語言；預設語言不同時也注入，讓原版 Translate() 能逐一退回。
         internal static void InjectInto(LoadedLanguage activeLanguage, LoadedLanguage defaultLanguage, string languageDataDir)
         {
             InjectInto(activeLanguage, languageDataDir);
@@ -60,7 +58,7 @@ namespace FasterGameLoading
                 InjectInto(defaultLanguage, languageDataDir);
         }
 
-        /// <summary>比照原版 LoadedLanguage.AllDirectories：語言資料夾先找 folderName，再找 legacyFolderName；Keyed 底下的子資料夾一併載入。</summary>
+        // 比照原版 LoadedLanguage.AllDirectories：語言資料夾先找 folderName，再找 legacyFolderName；Keyed 底下的子資料夾一併載入。
         internal static void InjectInto(LoadedLanguage language, string languageDataDir)
         {
             if (language == null)
@@ -87,7 +85,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>交由原版 LoadedLanguage.LoadFromFile_Keyed 解析（\n 跳脫、佔位值、重複 Key 與解析錯誤皆照原版處理）。</summary>
+        // 交由原版 LoadedLanguage.LoadFromFile_Keyed 解析（\n 跳脫、佔位值、重複 Key 與解析錯誤皆照原版處理）。
         internal static void LoadKeyedTranslationsFromFile(string filePath, LoadedLanguage language)
         {
             string contents;

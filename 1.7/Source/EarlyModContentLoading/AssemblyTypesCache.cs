@@ -28,6 +28,6 @@ internal static class AssemblyTypesCache
         return typesByAssembly.GetOrAdd(assembly, types);
     }
 
-    /// <summary>測試用：清除快取，讓下一次查詢重新列舉。</summary>
+    // 測試用：清除快取，讓下一次查詢重新列舉。
     internal static void Clear() => typesByAssembly.Clear();
 }

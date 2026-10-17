@@ -54,10 +54,10 @@ namespace FasterGameLoading.InGameTests
     [HarmonyPatch(typeof(Root), nameof(Root.Update))]
     internal static class TestRunDriver
     {
-        /// <summary>等待延遲管線的上限；逾時仍會執行測試，讓未完成的狀態以測試失敗呈現。</summary>
+        // 等待延遲管線的上限；逾時仍會執行測試，讓未完成的狀態以測試失敗呈現。
         private const double TimeoutSeconds = 300;
 
-        /// <summary>目前等待中（或正在執行）的輪次，從 1 開始。</summary>
+        // 目前等待中（或正在執行）的輪次，從 1 開始。
         public static int Round { get; private set; } = 1;
 
         private static bool finished;

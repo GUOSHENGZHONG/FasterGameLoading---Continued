@@ -7,14 +7,12 @@ using Verse;
 
 namespace FasterGameLoading;
 
-/// <summary>
-/// 負責掃描和對照所有已載入的 Mod 紋理與其關聯的 Def 和 ModContentPack。
-/// </summary>
+// 負責掃描和對照所有已載入的 Mod 紋理與其關聯的 Def 和 ModContentPack。
 public class TextureScanner
 {
-    /// <summary>紋理 → 檔案路徑的對照表。</summary>
+    // 紋理 → 檔案路徑的對照表。
     internal readonly Dictionary<Texture, string> texturesByPaths = new();
-    /// <summary>紋理 → (Def, 路徑) 的對照表。</summary>
+    // 紋理 → (Def, 路徑) 的對照表。
     internal readonly Dictionary<Texture, KeyValuePair<BuildableDef, string>> texturesByDefs = new();
 
     /// <summary>
@@ -31,7 +29,7 @@ public class TextureScanner
 
 
 
-    /// <summary>掃描所有 PawnKindDef 的種族紋理與生命階段圖形。</summary>
+    // 掃描所有 PawnKindDef 的種族紋理與生命階段圖形。
     private void ScanPawnTextures()
     {
         foreach (var pawnKind in DefDatabase<PawnKindDef>.AllDefs)
@@ -54,7 +52,7 @@ public class TextureScanner
         }
     }
 
-    /// <summary>掃描所有 StyleCategoryDef 的外觀圖形。</summary>
+    // 掃描所有 StyleCategoryDef 的外觀圖形。
     private void ScanStyleTextures()
     {
         foreach (var styleDef in DefDatabase<StyleCategoryDef>.AllDefs)
@@ -69,7 +67,7 @@ public class TextureScanner
         }
     }
 
-    /// <summary>登錄單一風格的主圖形，以及（若有）其各體型的穿著外觀圖形。</summary>
+    // 登錄單一風格的主圖形，以及（若有）其各體型的穿著外觀圖形。
     private void AddStyleEntry(ThingDefStyle style)
     {
         AddEntry(style.ThingDef, style.StyleDef.Graphic);
@@ -88,7 +86,7 @@ public class TextureScanner
         }
     }
 
-    /// <summary>掃描所有 BuildableDef 的建物/物品/植物紋理。</summary>
+    // 掃描所有 BuildableDef 的建物/物品/植物紋理。
     private void ScanBuildableTextures()
     {
         foreach (var def in DefDatabase<BuildableDef>.AllDefs)
@@ -109,7 +107,7 @@ public class TextureScanner
         }
     }
 
-    /// <summary>掃描服裝的多種穿著外觀變體（含 wornGraphicPaths）。</summary>
+    // 掃描服裝的多種穿著外觀變體（含 wornGraphicPaths）。
     private void ScanApparelVariants(BuildableDef def, ThingDef thingDef)
     {
         if (TextureResize.GetTextureType(thingDef) is not TextureResize.TextureType.Apparel) return;
@@ -133,7 +131,7 @@ public class TextureScanner
         }
     }
 
-    /// <summary>掃描植物的特殊圖形變體（落葉、未成熟、受汙染）。</summary>
+    // 掃描植物的特殊圖形變體（落葉、未成熟、受汙染）。
     private void ScanPlantVariants(BuildableDef def, ThingDef thingDef)
     {
         var type = TextureResize.GetTextureType(thingDef);
@@ -147,9 +145,7 @@ public class TextureScanner
             AddEntry(def, thingDef.plant.pollutedGraphic);
     }
 
-    /// <summary>
-    /// 將 Def 的圖形和 UI 圖示加入紋理條目。
-    /// </summary>
+    // 將 Def 的圖形和 UI 圖示加入紋理條目。
     private void FillEntry(BuildableDef def, Graphic graphicOverride = null)
     {
         var graphic = graphicOverride ?? def.graphic;
@@ -166,7 +162,7 @@ public class TextureScanner
     /// 支援 Graphic_Multi、Graphic_Appearances、Graphic_Single、
     /// Graphic_RandomRotated、Graphic_Linked、Graphic_Collection 等類型。
     /// </summary>
-    /// <summary>將紋理條目加入對照表。</summary>
+    // 將紋理條目加入對照表。
     private void AddEntry(BuildableDef def, string fullPath, Texture texture)
     {
         texturesByDefs[texture] = new(def, fullPath);
@@ -197,9 +193,7 @@ public class TextureScanner
         }
     }
 
-    /// <summary>
-    /// 從 Material 中提取 mainTexture 和 mask texture 加入條目。
-    /// </summary>
+    // 從 Material 中提取 mainTexture 和 mask texture 加入條目。
     private void GetMatTexture(Material mat, BuildableDef def)
     {
         if (mat?.mainTexture != mat && mat?.mainTexture != null && TryGetTexturePath(mat.mainTexture, out var fullPath))
@@ -217,7 +211,7 @@ public class TextureScanner
         }
     }
 
-    /// <summary>從已載入貼圖登記重新整理紋理路徑對照表。</summary>
+    // 從已載入貼圖登記重新整理紋理路徑對照表。
     private void RefreshTexturePathMap()
     {
         foreach (var kvp in LoadedTextureRegistry.Snapshot())
@@ -226,9 +220,7 @@ public class TextureScanner
         }
     }
 
-    /// <summary>
-    /// 根據 Texture 物件尋找其磁碟路徑。先在本地快取查詢，找不到時查已載入貼圖登記的反向表。
-    /// </summary>
+    // 根據 Texture 物件尋找其磁碟路徑。先在本地快取查詢，找不到時查已載入貼圖登記的反向表。
     public bool TryGetTexturePath(Texture texture, out string fullPath)
     {
         if (!ReferenceEquals(texture, null) && texturesByPaths.TryGetValue(texture, out fullPath))
@@ -245,7 +237,7 @@ public class TextureScanner
         return false;
     }
 
-    /// <summary>清理掃描階段的暫存資料。</summary>
+    // 清理掃描階段的暫存資料。
     public void ClearTextureScanData()
     {
         texturesByPaths.Clear();

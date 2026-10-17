@@ -34,7 +34,7 @@ namespace FasterGameLoading.InGameTests
     [HarmonyPatch]
     internal static class NullTextureDrawProbe
     {
-        /// <summary>(輪次, 呼叫端堆疊摘要) → 次數。</summary>
+        // (輪次, 呼叫端堆疊摘要) → 次數。
         public static readonly Dictionary<(int round, string caller), int> Callers = new Dictionary<(int, string), int>();
 
         /// <summary>

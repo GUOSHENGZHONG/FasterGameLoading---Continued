@@ -16,11 +16,11 @@ namespace FasterGameLoading
     [HarmonyPatch(typeof(AccessTools), "AllTypes")]
     public static class AccessTools_AllTypes_Patch
     {
-        /// <summary>快取的全型別列表。使用 volatile + lock 確保執行緒安全。</summary>
+        // 快取的全型別列表。使用 volatile + lock 確保執行緒安全。
         private static volatile List<Type> allTypesCached;
         private static readonly object typesLock = new();
         private static volatile int cachedAssembliesCount = 0;
-        /// <summary>建立快取時所有動態組件的型別總數；同一動態組件新增型別不會改變組件數，需另外比對。</summary>
+        // 建立快取時所有動態組件的型別總數；同一動態組件新增型別不會改變組件數，需另外比對。
         private static volatile int cachedDynamicTypeCount = 0;
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace FasterGameLoading
             EnumerateTypesInBackground(assembliesSnapshot, snapshotCount, dynamicTypeCount);
         }
 
-        /// <summary>背景緒僅做型別「列舉」，不讀取 FullName（原因見 Preload 的說明）。</summary>
+        // 背景緒僅做型別「列舉」，不讀取 FullName（原因見 Preload 的說明）。
         private static void EnumerateTypesInBackground(Assembly[] assembliesSnapshot, int snapshotCount, int dynamicTypeCount)
         {
             Task.Run(() =>
@@ -121,9 +121,7 @@ namespace FasterGameLoading
             return count;
         }
 
-        /// <summary>
-        /// 列舉＋lock＋賦值的共用後端：三處快取寫入（主執行緒列舉、背景列舉、快取失效重建）皆經由此處。
-        /// </summary>
+        // 列舉＋lock＋賦值的共用後端：三處快取寫入（主執行緒列舉、背景列舉、快取失效重建）皆經由此處。
         private static void StoreTypes(List<Type> types, int assembliesCount, int dynamicTypeCount)
         {
             lock (typesLock)

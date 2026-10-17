@@ -18,7 +18,7 @@ namespace FasterGameLoading.Tests.TextureDownscaler
         private Func<VirtualFile, Texture2D> originalLoad;
         private int loaderCalls;
 
-        /// <summary>不觸碰檔案系統的 VirtualFile 替身，只需要 FullPath 可讀。</summary>
+        // 不觸碰檔案系統的 VirtualFile 替身，只需要 FullPath 可讀。
         private sealed class FakeVirtualFile : VirtualFile
         {
             private readonly string path;
@@ -69,7 +69,7 @@ namespace FasterGameLoading.Tests.TextureDownscaler
             };
         }
 
-        /// <summary>在背景呼叫 Load，並以本執行緒扮演主執行緒持續泵送，直到 Load 回傳。</summary>
+        // 在背景呼叫 Load，並以本執行緒扮演主執行緒持續泵送，直到 Load 回傳。
         private static Texture2D LoadWhilePumping(string path)
         {
             var load = Task.Run(() => MainThreadTextureLoader.Load(new FakeVirtualFile(path)));

@@ -4,9 +4,7 @@ using Verse;
 
 namespace FasterGameLoading
 {
-    /// <summary>
-    /// 攔截 ModContentPack.ReloadContentInt，避免已被提早載入的 Mod 重複載入。
-    /// </summary>
+    // 攔截 ModContentPack.ReloadContentInt，避免已被提早載入的 Mod 重複載入。
     [HarmonyPatch(typeof(ModContentPack), "ReloadContentInt")]
     public static class ModContentPack_ReloadContentInt_Patch
     {

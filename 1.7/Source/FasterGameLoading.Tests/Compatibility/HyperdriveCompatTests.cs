@@ -25,7 +25,7 @@ namespace RimWorldHyperdrive
             if (ThrowInConstructor) throw new InvalidOperationException("simulated Hyperdrive constructor failure");
         }
 
-        /// <summary>模擬 Hyperdrive 的 LoadModXML prefix：記下當下 FGL 是否讓出 Defs/，並取代原方法。</summary>
+        // 模擬 Hyperdrive 的 LoadModXML prefix：記下當下 FGL 是否讓出 Defs/，並取代原方法。
         internal static bool? ParallelizesModDefsDuringLoad { get; set; }
 
         public static bool LoadModXMLPrefix()

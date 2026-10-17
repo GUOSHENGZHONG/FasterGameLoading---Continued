@@ -47,7 +47,7 @@ namespace FasterGameLoading.Tests.DelaySoundLoading
 
         private static readonly FieldInfo ResolvedGrainsField = AccessTools.Field(typeof(SubSoundDef), "resolvedGrains");
 
-        /// <summary>建立尚未解析（resolvedGrains 為空）的 SubSoundDef。</summary>
+        // 建立尚未解析（resolvedGrains 為空）的 SubSoundDef。
         private static SubSoundDef NewSubSound()
         {
             var subSound = (SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef));
@@ -55,7 +55,7 @@ namespace FasterGameLoading.Tests.DelaySoundLoading
             return subSound;
         }
 
-        /// <summary>模擬原版解析回呼：在 resolvedGrains 放入一個 grain。</summary>
+        // 模擬原版解析回呼：在 resolvedGrains 放入一個 grain。
         private static void AddGrain(SubSoundDef subSound) =>
             ((List<ResolvedGrain>)ResolvedGrainsField.GetValue(subSound)).Add(
                 (ResolvedGrain)FormatterServices.GetUninitializedObject(typeof(ResolvedGrain_Silence)));

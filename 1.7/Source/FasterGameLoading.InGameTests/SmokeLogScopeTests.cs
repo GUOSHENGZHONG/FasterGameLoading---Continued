@@ -6,7 +6,7 @@ using Verse;
 
 namespace FasterGameLoading.InGameTests
 {
-    /// <summary>重新檢查 DevTools 設定允許的模組掃描警告，避免掩蓋已啟用模組的問題。</summary>
+    // 重新檢查 DevTools 設定允許的模組掃描警告，避免掩蓋已啟用模組的問題。
     internal sealed class SmokeLogScopeTests
     {
         // 必須與 Mod/Configs/SmokeTestConfig.xml 的 warningsAllowed 保持一致。

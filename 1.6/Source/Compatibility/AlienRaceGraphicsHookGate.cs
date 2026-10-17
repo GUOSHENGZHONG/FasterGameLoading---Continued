@@ -53,7 +53,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>還有執行中 mod 的內容未載入時略過原方法；HAR 仍訂閱 onBeforeRender，下一幀會再呼叫。</summary>
+        // 還有執行中 mod 的內容未載入時略過原方法；HAR 仍訂閱 onBeforeRender，下一幀會再呼叫。
         internal static bool Prefix()
         {
             if (released) return true;

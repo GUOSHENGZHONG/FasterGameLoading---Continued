@@ -72,7 +72,7 @@ namespace FasterGameLoading.InGameTests
             }
         }
 
-        /// <summary>地圖上每個有 graphicData 的物件都要拿得到真正的圖形與貼圖，不能是原版的錯誤圖形。</summary>
+        // 地圖上每個有 graphicData 的物件都要拿得到真正的圖形與貼圖，不能是原版的錯誤圖形。
         [Test]
         public static void EverySpawnedThingHasItsGraphic()
         {
@@ -147,7 +147,7 @@ namespace FasterGameLoading.InGameTests
         }
     }
 
-    /// <summary>記錄 World.FinalizeInit 執行當下 FGL 延遲管線的狀態，用來說明本次 quicktest 是否真的走到音效補解析。</summary>
+    // 記錄 World.FinalizeInit 執行當下 FGL 延遲管線的狀態，用來說明本次 quicktest 是否真的走到音效補解析。
     [HarmonyPatch(typeof(World), nameof(World.FinalizeInit))]
     internal static class WorldFinalizeInitProbe
     {

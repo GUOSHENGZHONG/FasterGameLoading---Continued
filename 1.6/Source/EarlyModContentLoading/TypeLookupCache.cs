@@ -18,7 +18,7 @@ namespace FasterGameLoading
     /// </summary>
     internal static class TypeLookupCache
     {
-        /// <summary>上一次 session 查詢過的名稱 → 完整型別名稱；讀檔時可能整份捨棄（見 <see cref="RestoreAfterLoad"/>）。</summary>
+        // 上一次 session 查詢過的名稱 → 完整型別名稱；讀檔時可能整份捨棄（見 <see cref="RestoreAfterLoad"/>）。
         internal static ConcurrentDictionary<string, string> FullNamesFromLastSession { get; set; } = new(StringComparer.Ordinal);
 
         /// <summary>
@@ -27,7 +27,7 @@ namespace FasterGameLoading
         /// </summary>
         internal static string PersistedFingerprint { get; set; }
 
-        /// <summary>本行程是否已結算過一次對照；之後的輪次（語言重載）只併入新查到的名稱。</summary>
+        // 本行程是否已結算過一次對照；之後的輪次（語言重載）只併入新查到的名稱。
         internal static bool SessionMappingSettled { get; set; }
 
         static TypeLookupCache()
@@ -56,7 +56,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>清空所有名稱查詢快取（不含跨 session 對照）。</summary>
+        // 清空所有名稱查詢快取（不含跨 session 對照）。
         internal static void Invalidate()
         {
             GenTypes_GetTypeInAnyAssemblyInt_Patch.ClearCache();
@@ -120,7 +120,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>序列化跨 session 對照與其組件指紋；由 SessionCache.ExposeData 在每一輪 Scribe 呼叫。</summary>
+        // 序列化跨 session 對照與其組件指紋；由 SessionCache.ExposeData 在每一輪 Scribe 呼叫。
         internal static void ExposeData()
         {
             Dictionary<string, string> tempTypes = null;
@@ -144,9 +144,7 @@ namespace FasterGameLoading
             PersistedFingerprint = fingerprint;
         }
 
-        /// <summary>
-        /// 讀檔完成後決定跨 session 對照是否還能用：mod 組合變了、組件內容變了、或本次指紋算不出來時整份捨棄。
-        /// </summary>
+        // 讀檔完成後決定跨 session 對照是否還能用：mod 組合變了、組件內容變了、或本次指紋算不出來時整份捨棄。
         internal static void RestoreAfterLoad(bool modSetChanged)
         {
             FullNamesFromLastSession ??= new ConcurrentDictionary<string, string>(StringComparer.Ordinal);

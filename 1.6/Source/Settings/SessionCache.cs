@@ -12,9 +12,7 @@ namespace FasterGameLoading
     /// </summary>
     internal static class SessionCache
     {
-        /// <summary>
-        /// 上一次 session 中啟用的 mod 列表（packageIdLowerCase）。
-        /// </summary>
+        // 上一次 session 中啟用的 mod 列表（packageIdLowerCase）。
         internal static List<string> modsInLastSession { get; set; } = new();
 
         /// <summary>
@@ -53,13 +51,11 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>所有執行中 mod 的根目錄；讀檔時（mod 建構子內）清單已建立完成。</summary>
+        // 所有執行中 mod 的根目錄；讀檔時（mod 建構子內）清單已建立完成。
         private static IEnumerable<string> RunningModRootDirectories() =>
             LoadedModManager.RunningMods.Where(static m => m != null).Select(static m => m.RootDir);
 
-        /// <summary>
-        /// 比對目前啟用的 mod 清單與上次 session 的記錄是否一致。
-        /// </summary>
+        // 比對目前啟用的 mod 清單與上次 session 的記錄是否一致。
         private static bool DetectModSetChange()
         {
             var activeMods = ModsConfig.ActiveModsInLoadOrder;

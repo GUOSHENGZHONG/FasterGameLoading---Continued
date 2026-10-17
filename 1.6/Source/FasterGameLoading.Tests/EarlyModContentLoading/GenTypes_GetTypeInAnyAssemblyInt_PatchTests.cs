@@ -168,7 +168,7 @@ namespace FasterGameLoading.Tests.EarlyModContentLoading
             return assembly;
         }
 
-        /// <summary>與原版 GenTypes.GetTypeInAnyAssemblyRaw 相同：依組件順序以 ignoreCase: true 查詢，先找到者勝出。</summary>
+        // 與原版 GenTypes.GetTypeInAnyAssemblyRaw 相同：依組件順序以 ignoreCase: true 查詢，先找到者勝出。
         private static Type VanillaIgnoreCaseSearch(string typeName, params System.Reflection.Assembly[] assembliesInSearchOrder)
         {
             foreach (var assembly in assembliesInSearchOrder)

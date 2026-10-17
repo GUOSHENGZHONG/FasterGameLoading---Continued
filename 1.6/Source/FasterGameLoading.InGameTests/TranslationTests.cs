@@ -27,7 +27,7 @@ namespace FasterGameLoading.InGameTests
             AssertInjected(language);
         }
 
-        /// <summary>FGL 沒有提供的語言：目前語言不含 FGL 的 Key，Translate() 交由原版退回英文。</summary>
+        // FGL 沒有提供的語言：目前語言不含 FGL 的 Key，Translate() 交由原版退回英文。
         [Test]
         public static void UnprovidedLanguageFallsBackToEnglishThroughVanilla()
         {
@@ -87,7 +87,7 @@ namespace FasterGameLoading.InGameTests
             }
         }
 
-        /// <summary>路徑正規化後比對，不依賴注入端的字串格式。</summary>
+        // 路徑正規化後比對，不依賴注入端的字串格式。
         private static bool IsFromFgl(LoadedLanguage.KeyedReplacement replacement)
             => replacement.fileSourceFullPath != null
                && NormalizedFullPath(replacement.fileSourceFullPath).StartsWith(NormalizedFullPath(LanguageDataDirectory()), System.StringComparison.Ordinal);
@@ -98,7 +98,7 @@ namespace FasterGameLoading.InGameTests
         private static string LanguageDataDirectory()
             => Path.Combine(FasterGameLoadingMod.Instance.Content.RootDir, "LanguageData");
 
-        /// <summary>與 TranslationInjector 相同的選擇規則：語言資料夾先找 folderName，再找 legacyFolderName；沒有語言資料夾或 Keyed 時回傳 null。</summary>
+        // 與 TranslationInjector 相同的選擇規則：語言資料夾先找 folderName，再找 legacyFolderName；沒有語言資料夾或 Keyed 時回傳 null。
         private static string KeyedDirectory(LoadedLanguage language)
         {
             foreach (var folderName in new[] { language.folderName, language.LegacyFolderName })

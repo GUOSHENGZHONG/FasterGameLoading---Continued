@@ -5,7 +5,7 @@ using Verse;
 
 namespace FasterGameLoading.InGameTests
 {
-    /// <summary>DevTools 在主選單可見後就可能執行測試；FGL 的延遲管線仍需逐幀完成。</summary>
+    // DevTools 在主選單可見後就可能執行測試；FGL 的延遲管線仍需逐幀完成。
     [TestFixture(TestType.MainMenu)]
     [ExecutionPriority(Priority.First)]
     internal sealed class MainMenuReadinessTests
@@ -17,7 +17,7 @@ namespace FasterGameLoading.InGameTests
         public IEnumerator WaitForDeferredPipeline() => ReadinessGate.Wait(requireMap: false);
     }
 
-    /// <summary>quicktest 需等地圖建立及 World.FinalizeInit 路徑完成。</summary>
+    // quicktest 需等地圖建立及 World.FinalizeInit 路徑完成。
     [TestFixture(TestType.Playing)]
     [ExecutionPriority(Priority.First)]
     internal sealed class PlayingReadinessTests

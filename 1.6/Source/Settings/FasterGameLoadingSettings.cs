@@ -10,20 +10,21 @@ namespace FasterGameLoading
     /// </summary>
     public class FasterGameLoadingSettings : ModSettings
     {
-        /// <summary>詳細日誌記錄開關（預設關閉）</summary>
+        // 詳細日誌記錄開關（預設關閉）
         public static bool VerboseLogging { get; set; }
 
 
-        /// <summary>延遲非必要圖形/圖示載入（預設關閉）</summary>
+        // 延遲非必要圖形/圖示載入（預設關閉）
         public static bool DelayGraphicLoading { get; set; }
 
-        /// <summary>提早載入 Mod 內容（預設開啟）</summary>
-        /// <remarks>
+        /// <summary>
+        /// 提早載入 Mod 內容（預設開啟）
+        ///
         /// 此處刻意使用 camelCase 命名，與 Loading Progress mod (ilyvion/loading-progress)
         /// 的整合相容。該 mod 透過 Harmony AccessTools.Field()（case-sensitive）以
         /// "earlyModContentLoading" 反射讀取此欄位值，若改為 PascalCase 將導致其
         /// 無法顯示本模組的額外進度條。
-        /// </remarks>
+        /// </summary>
         // MA0069/S1104: 必須維持為公開靜態欄位。loading-progress 以
         // AccessTools.Field("earlyModContentLoading") 反射讀取；改成屬性後只會留下
         // 編譯器產生的 <earlyModContentLoading>k__BackingField，該反射查詢會失敗。
@@ -31,7 +32,7 @@ namespace FasterGameLoading
         public static bool earlyModContentLoading = true;
 #pragma warning restore MA0069, S1104
 
-        /// <summary>自適應靜態圖集烘焙（預設關閉）</summary>
+        // 自適應靜態圖集烘焙（預設關閉）
         public static bool StaticAtlasesBaking { get; set; }
 
         /// <summary>
@@ -52,10 +53,10 @@ namespace FasterGameLoading
         /// </summary>
         public static bool FastStaticAtlasCompression { get; set; }
 
-        /// <summary>啟用多執行緒預載入（預設開啟）</summary>
+        // 啟用多執行緒預載入（預設開啟）
         public static bool EnableMultiThreading { get; set; } = true;
 
-        /// <summary>型別查詢快取（預設開啟）；重新啟動遊戲後生效。</summary>
+        // 型別查詢快取（預設開啟）；重新啟動遊戲後生效。
         public static bool TypeLookupCache { get; set; } = true;
 
 
@@ -80,7 +81,7 @@ namespace FasterGameLoading
             Widgets.EndScrollView();
         }
 
-        /// <summary>載入行為相關的開關。</summary>
+        // 載入行為相關的開關。
         private static void DrawLoadingOptions(Listing_Standard ls)
         {
             ls.CheckboxLabeled("FGL_EarlyModContentLoading".Translate(), ref earlyModContentLoading);
@@ -96,7 +97,7 @@ namespace FasterGameLoading
             DelayGraphicLoading = delayGraphicLoading;
         }
 
-        /// <summary>圖集烘焙與詳細日誌開關。</summary>
+        // 圖集烘焙與詳細日誌開關。
         private static void DrawDiagnosticsOptions(Listing_Standard ls)
         {
             var staticAtlasesBaking = StaticAtlasesBaking;
@@ -116,7 +117,7 @@ namespace FasterGameLoading
             VerboseLogging = verboseLogging;
         }
 
-        /// <summary>紋理降質說明、執行按鈕，以及快取狀態與清除按鈕。</summary>
+        // 紋理降質說明、執行按鈕，以及快取狀態與清除按鈕。
         private static void DrawTextureCacheSection(Listing_Standard ls)
         {
             // Texture resize explanation

@@ -15,7 +15,7 @@ namespace FasterGameLoading.InGameTests
     [TestSuite]
     internal static class ReflectionCacheTests
     {
-        /// <summary>常被 mod 用來找延伸點的基底型別，另加上快取中已經算過的所有基底型別。</summary>
+        // 常被 mod 用來找延伸點的基底型別，另加上快取中已經算過的所有基底型別。
         private static readonly Type[] LeafBaseTypes =
         {
             typeof(Def), typeof(Thing), typeof(ThingComp), typeof(CompProperties), typeof(HediffComp),
@@ -42,7 +42,7 @@ namespace FasterGameLoading.InGameTests
             }
         }
 
-        /// <summary>快取中每個名稱都必須解析到原版會解析到的型別。</summary>
+        // 快取中每個名稱都必須解析到原版會解析到的型別。
         [Test]
         public static void CachedTypeByNameMatchesVanilla()
         {
@@ -68,7 +68,7 @@ namespace FasterGameLoading.InGameTests
             FglState.AssertNone(failures, "cached TypeByName results differing from vanilla");
         }
 
-        /// <summary>查無結果不能被快取，否則之後才定義該型別的組件永遠查不到。</summary>
+        // 查無結果不能被快取，否則之後才定義該型別的組件永遠查不到。
         [Test]
         public static void MissingTypeByNameIsNotCached()
         {
@@ -79,7 +79,7 @@ namespace FasterGameLoading.InGameTests
             Assert.That(AccessTools_TypeByName_Patch.cachedResults.ContainsKey(missing)).Is.False();
         }
 
-        /// <summary>原版 AllSubclasses 以 PLINQ 產生，順序不固定，因此以集合比對。</summary>
+        // 原版 AllSubclasses 以 PLINQ 產生，順序不固定，因此以集合比對。
         [Test]
         public static void AllLeafSubclassesMatchesVanilla()
         {
@@ -119,7 +119,7 @@ namespace FasterGameLoading.InGameTests
         }
     }
 
-    /// <summary>未套用任何 patch 的原版反射查詢副本。</summary>
+    // 未套用任何 patch 的原版反射查詢副本。
     [HarmonyPatch]
     internal static class VanillaReflection
     {

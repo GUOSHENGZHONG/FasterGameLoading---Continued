@@ -8,13 +8,11 @@ using Verse;
 
 namespace FasterGameLoading;
 
-/// <summary>
-/// 並行解析 XML，但保留 RimWorld 原版的檔案收集與覆蓋順序。
-/// </summary>
+// 並行解析 XML，但保留 RimWorld 原版的檔案收集與覆蓋順序。
 [HarmonyPatch(typeof(DirectXmlLoader), "XmlAssetsInModFolder")]
 public static class DirectXmlLoader_XmlAssetsInModFolder_Patch
 {
-    /// <summary>原版 ModContentPack.LoadDefs 傳入的資料夾路徑。</summary>
+    // 原版 ModContentPack.LoadDefs 傳入的資料夾路徑。
     internal const string DefsFolderPath = "Defs/";
 
     // MA0016: foldersToLoadDebug 是 Harmony 由原方法注入的參數，型別必須與

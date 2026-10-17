@@ -75,7 +75,7 @@ namespace FasterGameLoading.Tests.DelayGraphicAndIconLoading
 
         private void RunToCompletion() => RunLikeUnity(delayedActions.PerformActions());
 
-        /// <summary>模擬 Unity 協程：yield 出的 IEnumerator 視為子協程，先跑完再繼續外層。</summary>
+        // 模擬 Unity 協程：yield 出的 IEnumerator 視為子協程，先跑完再繼續外層。
         internal static void RunLikeUnity(System.Collections.IEnumerator coroutine)
         {
             while (coroutine.MoveNext())
@@ -172,7 +172,7 @@ namespace FasterGameLoading.Tests.DelayGraphicAndIconLoading
             Assert.That(DelayedActions.AllowsVanillaStaticBake, Is.True);
         }
 
-        /// <summary>以假時鐘的時間軸執行 <paramref name="body"/>，並在主選單已出現（時間 1）後開始。</summary>
+        // 以假時鐘的時間軸執行 <paramref name="body"/>，並在主選單已出現（時間 1）後開始。
         private static void WithTimelineAfterMainMenu(Action<StartupTimeline, Action<double>> body)
         {
             double now = 0;

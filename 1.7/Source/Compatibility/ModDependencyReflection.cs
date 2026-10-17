@@ -29,17 +29,15 @@ internal static class ModDependencyReflection
 
     internal const string AlienRacesPackageId = "erdelf.HumanoidAlienRaces";
 
-    /// <summary>HAR 的開發版（與正式版擇一啟用）。</summary>
+    // HAR 的開發版（與正式版擇一啟用）。
     internal const string AlienRacesDevPackageId = "erdelf.HumanoidAlienRaces.dev";
 
-    /// <summary><paramref name="packageId"/> 是否為 HAR 本體（正式版或開發版）。</summary>
+    // <paramref name="packageId"/> 是否為 HAR 本體（正式版或開發版）。
     internal static bool IsAlienRaces(string packageId)
         => string.Equals(packageId, AlienRacesPackageId, StringComparison.OrdinalIgnoreCase)
             || string.Equals(packageId, AlienRacesDevPackageId, StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// 判定 <paramref name="metaData"/> 是否相依於外星人種族（Humanoid Alien Races）本體或衍生。
-    /// </summary>
+    // 判定 <paramref name="metaData"/> 是否相依於外星人種族（Humanoid Alien Races）本體或衍生。
     internal static bool DependsOnAlienRaces(object metaData)
         => DependsOnMod(metaData, AlienRacesPackageId) || DependsOnMod(metaData, AlienRacesDevPackageId);
 

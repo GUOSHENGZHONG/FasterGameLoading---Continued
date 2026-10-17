@@ -30,10 +30,10 @@ public class ModContentLoaderTexture2D_LoadTexture_PatchTests
     private int originalRedirectTimeoutMs;
     private Func<VirtualFile, Texture2D> originalMainThreadLoad;
 
-    /// <summary>測試用的轉交逾時；正式值為 10 秒，會讓「泵送從未執行」的測試空等太久。</summary>
+    // 測試用的轉交逾時；正式值為 10 秒，會讓「泵送從未執行」的測試空等太久。
     private const int TestRedirectTimeoutMs = 1000;
 
-    /// <summary>不觸碰檔案系統的 VirtualFile 替身，只需要 FullPath 可讀。</summary>
+    // 不觸碰檔案系統的 VirtualFile 替身，只需要 FullPath 可讀。
     private sealed class FakeVirtualFile : VirtualFile
     {
         private readonly string path;
@@ -343,7 +343,7 @@ public class ModContentLoaderTexture2D_LoadTexture_PatchTests
             "啟動完成後，未被取用的預讀位元組（含仍在執行的預讀迴圈稍後寫入的）都必須釋放。");
     }
 
-    /// <summary>建立一筆降質快取項目與其快取檔，回傳快取檔路徑。</summary>
+    // 建立一筆降質快取項目與其快取檔，回傳快取檔路徑。
     private string WriteCacheEntry(string cacheFileName)
     {
         string cachePath = Path.Combine(tempDir, cacheFileName);

@@ -8,9 +8,7 @@ using Verse;
 
 namespace FasterGameLoading;
 
-/// <summary>
-/// 負責管理與執行 Mod 內容的提早載入邏輯。
-/// </summary>
+// 負責管理與執行 Mod 內容的提早載入邏輯。
 public class EarlyModContentLoader
 {
     private Queue<ModContentPack> pendingEarlyLoads;
@@ -26,9 +24,7 @@ public class EarlyModContentLoader
         "ReloadContentInt",
         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); // NOSONAR S3011: 遊戲 DLL 中該方法為 private，經由反射呼叫是唯一可行的整合方式
 
-    /// <summary>
-    /// 經由反射呼叫 ModContentPack.ReloadContentInt(false)，繞過 private 的可見性驗證。
-    /// </summary>
+    // 經由反射呼叫 ModContentPack.ReloadContentInt(false)，繞過 private 的可見性驗證。
     private static void InvokeReloadContentInt(ModContentPack mod)
     {
         if (ReloadContentIntMethod == null)
@@ -54,24 +50,18 @@ public class EarlyModContentLoader
         SessionLifecycle.On(LifecyclePhase.LanguageReloading, static () => ModClassesCreated = false);
     }
 
-    /// <summary>
-    /// 所有 Mod 建構子是否都已執行完畢；由 <see cref="LoadedModManager_LoadModXML_Patch"/> 在事件緒設定。
-    /// </summary>
+    // 所有 Mod 建構子是否都已執行完畢；由 <see cref="LoadedModManager_LoadModXML_Patch"/> 在事件緒設定。
     internal static bool ModClassesCreated
     {
         get => modClassesCreated;
         set => modClassesCreated = value;
     }
 
-    /// <summary>
-    /// 取得 Mod 內容提早載入是否已完成。
-    /// </summary>
+    // 取得 Mod 內容提早載入是否已完成。
     public bool EarlyLoadingComplete { get; private set; }
 
-    /// <summary>
-    /// 每幀執行，利用空閒時間預先載入尚未處理的 Mod 內容。
-    /// </summary>
-    /// <param name="delayedActions">延遲動作管理器的實例，用於確認時間預算。</param>
+    // 每幀執行，利用空閒時間預先載入尚未處理的 Mod 內容。
+    // 參數 delayedActions：延遲動作管理器的實例，用於確認時間預算。
     public void Update(DelayedActions delayedActions)
     {
         // earlyModContentLoading 採 camelCase 以相容 loading-progress 的反射查詢，詳見 FasterGameLoadingSettings
@@ -149,7 +139,7 @@ public class EarlyModContentLoader
         return true;
     }
 
-    /// <summary>建立本輪待提早載入的 Mod 清單（排除已載入與略過名單中的項目）。</summary>
+    // 建立本輪待提早載入的 Mod 清單（排除已載入與略過名單中的項目）。
     private void BuildPendingEarlyLoads()
     {
         var pending = LoadedModManager.RunningMods
@@ -158,9 +148,7 @@ public class EarlyModContentLoader
         pendingEarlyLoads = new Queue<ModContentPack>(pending);
     }
 
-    /// <summary>
-    /// 提早載入單一 Mod 的內容。載入失敗時不加入 loadedMods，讓正式流程可以重試。
-    /// </summary>
+    // 提早載入單一 Mod 的內容。載入失敗時不加入 loadedMods，讓正式流程可以重試。
     private static void LoadOneModContent(ModContentPack modToLoad)
     {
         try

@@ -49,13 +49,13 @@ internal static class FGLProgressReporter
         GetIsPaused = () => (bool)pauseField.GetValue(null);
     }
 
-    /// <summary>只在此 patch 依賴的 loading-progress 型別存在時啟用。</summary>
+    // 只在此 patch 依賴的 loading-progress 型別存在時啟用。
     internal static bool Prepare()
     {
         return TargetMethod() != null;
     }
 
-    /// <summary>回傳目標 property getter，patch 不應用於不存在的型別。</summary>
+    // 回傳目標 property getter，patch 不應用於不存在的型別。
     internal static MethodBase TargetMethod()
     {
         var type = AccessTools.TypeByName(UtilsTypeName);

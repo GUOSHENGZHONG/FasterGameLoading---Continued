@@ -20,20 +20,20 @@ namespace FasterGameLoading;
 [HarmonyBefore(TextureOwnership.GraphicsSettingsHarmonyId)]
 public static class ModContentLoaderTexture2D_LoadTexture_Patch
 {
-    /// <summary>已非同步預載入至記憶體的降質快取紋理位元組數據。</summary>
+    // 已非同步預載入至記憶體的降質快取紋理位元組數據。
     public static ConcurrentDictionary<string, byte[]> preloadedCacheBytes { get; } = new(StringComparer.Ordinal);
-    /// <summary>主執行緒已取用過的快取檔；預讀端看到就跳過，避免同一檔案讀兩次且預讀結果無人取用。</summary>
+    // 主執行緒已取用過的快取檔；預讀端看到就跳過，避免同一檔案讀兩次且預讀結果無人取用。
     private static readonly ConcurrentDictionary<string, byte> _servedCachePaths = new(StringComparer.Ordinal);
-    /// <summary>啟動完成後設為 true，讓仍在執行的預讀迴圈提早結束。</summary>
+    // 啟動完成後設為 true，讓仍在執行的預讀迴圈提早結束。
     private static volatile bool _preloadStopped;
     private static Task _preloadTask = Task.CompletedTask;
-    /// <summary>紋理快取命中次數。公開唯讀供診斷與測試讀取；寫入一律經 Interlocked。</summary>
+    // 紋理快取命中次數。公開唯讀供診斷與測試讀取；寫入一律經 Interlocked。
     public static int CacheLoadHits
     {
         get => Volatile.Read(ref cacheLoadHits);
         internal set => Interlocked.Exchange(ref cacheLoadHits, value);
     }
-    /// <summary>紋理快取失敗次數。公開唯讀供診斷與測試讀取；寫入一律經 Interlocked。</summary>
+    // 紋理快取失敗次數。公開唯讀供診斷與測試讀取；寫入一律經 Interlocked。
     public static int CacheLoadFailures
     {
         get => Volatile.Read(ref cacheLoadFailures);
@@ -57,9 +57,7 @@ public static class ModContentLoaderTexture2D_LoadTexture_Patch
         });
     }
 
-    /// <summary>
-    /// 背景異步預讀所有降質紋理快取到記憶體中，以防止主執行緒在載入紋理時阻塞 I/O。
-    /// </summary>
+    // 背景異步預讀所有降質紋理快取到記憶體中，以防止主執行緒在載入紋理時阻塞 I/O。
     public static void StartPreloadCachedTextures()
     {
         preloadedCacheBytes.Clear();
@@ -182,7 +180,7 @@ public static class ModContentLoaderTexture2D_LoadTexture_Patch
         return true;
     }
 
-    /// <summary>本 session 已載入過同一路徑時，直接沿用 registry 中的紋理。</summary>
+    // 本 session 已載入過同一路徑時，直接沿用 registry 中的紋理。
     private static bool TryServeFromWeakReferenceCache(string fullPath, out Texture2D result)
     {
         if (LoadedTextureRegistry.TryGetTexture(fullPath, out result))
@@ -323,9 +321,7 @@ public static class ModContentLoaderTexture2D_LoadTexture_Patch
         }
     }
 
-    /// <summary>
-    /// 原始方法載入成功後將紋理登記到 registry，供後續查詢使用。
-    /// </summary>
+    // 原始方法載入成功後將紋理登記到 registry，供後續查詢使用。
     public static void Postfix(VirtualFile file, bool __state, Texture2D __result)
     {
         if (__result != null)

@@ -7,7 +7,7 @@ using Verse;
 
 namespace FasterGameLoading.InGameTests
 {
-    /// <summary>測試共用的 FGL 狀態查詢與斷言輔助。</summary>
+    // 測試共用的 FGL 狀態查詢與斷言輔助。
     internal static class FglState
     {
         public const string HarmonyId = "FasterGameLoadingMod";
@@ -20,7 +20,7 @@ namespace FasterGameLoading.InGameTests
         public static bool DeferredPipelineFinished(int round)
             => PerformActionsTracker.Started >= round && FasterGameLoadingMod.delayedActions.Phase == DeferredPhase.Completed;
 
-        /// <summary>以 -quicktest 啟動：跳過主選單直接生成地圖。</summary>
+        // 以 -quicktest 啟動：跳過主選單直接生成地圖。
         public static bool Quicktest => GenCommandLine.CommandLineArgPassed("quicktest");
 
         public static string SettingsProfile =>
@@ -39,7 +39,7 @@ namespace FasterGameLoading.InGameTests
             return info != null && info.Owners.Contains(HarmonyId);
         }
 
-        /// <summary>LoadModXML 上各 prefix 的 owner，依 Harmony 的執行順序排列：priority 由高到低，同 priority 依套用先後（index）。</summary>
+        // LoadModXML 上各 prefix 的 owner，依 Harmony 的執行順序排列：priority 由高到低，同 priority 依套用先後（index）。
         public static List<string> LoadModXMLPrefixOwnersInRunOrder()
         {
             var info = Harmony.GetPatchInfo(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.LoadModXML)));
@@ -66,7 +66,7 @@ namespace FasterGameLoading.InGameTests
         }
     }
 
-    /// <summary>計算 PerformActions 主協程被啟動的次數，用來對應第幾輪載入；完成與否看 <see cref="DelayedActions.Phase"/>。</summary>
+    // 計算 PerformActions 主協程被啟動的次數，用來對應第幾輪載入；完成與否看 <see cref="DelayedActions.Phase"/>。
     [HarmonyPatch(typeof(DelayedActions), nameof(DelayedActions.PerformActions))]
     internal static class PerformActionsTracker
     {

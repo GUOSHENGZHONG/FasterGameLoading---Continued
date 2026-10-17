@@ -62,7 +62,7 @@ namespace FasterGameLoading
             });
         }
 
-        /// <summary>貼圖路徑是否位於受貼圖保護的 Mod 資料夾內（不降質、不進 registry）。</summary>
+        // 貼圖路徑是否位於受貼圖保護的 Mod 資料夾內（不降質、不進 registry）。
         public static bool IsProtectedTexturePath(string path)
         {
             if (string.IsNullOrEmpty(path)) return false;
@@ -86,13 +86,13 @@ namespace FasterGameLoading
             return false;
         }
 
-        /// <summary>貼圖是否要排除在靜態圖集之外：只在本次啟用自適應烘焙時，對受貼圖保護的 Mod 生效。</summary>
+        // 貼圖是否要排除在靜態圖集之外：只在本次啟用自適應烘焙時，對受貼圖保護的 Mod 生效。
         public static bool ShouldSkipBaking(string path)
         {
             return DelayedActions.AdaptiveBakingEnabled && IsProtectedTexturePath(path);
         }
 
-        /// <summary>Mod 是否不提早載入、XML 不平行解析。</summary>
+        // Mod 是否不提早載入、XML 不平行解析。
         public static bool ShouldSkipEarlyLoad(ModContentPack mod)
         {
             if (mod == null) return false;
@@ -112,7 +112,7 @@ namespace FasterGameLoading
             return shouldSkip;
         }
 
-        /// <summary>依 packageId 與相依清單判斷是否不提早載入；<paramref name="metaData"/> 為 ModMetaData 或同形物件。</summary>
+        // 依 packageId 與相依清單判斷是否不提早載入；<paramref name="metaData"/> 為 ModMetaData 或同形物件。
         public static bool ShouldSkipEarlyLoad(string packageId, object metaData = null)
         {
             if (string.IsNullOrEmpty(packageId)) return false;
@@ -138,12 +138,12 @@ namespace FasterGameLoading
                 || ModDependencyReflection.DependsOnMod(mod.ModMetaData, AncotLibraryPackageId);
         }
 
-        /// <summary>mod 的 PackageIdPlayerFacing 或 PackageId 是否在集合中；Workshop 副本的 PackageId 可能帶 "_steam" 後綴，故兩者都比對。</summary>
+        // mod 的 PackageIdPlayerFacing 或 PackageId 是否在集合中；Workshop 副本的 PackageId 可能帶 "_steam" 後綴，故兩者都比對。
         private static bool MatchesAny(ModContentPack mod, HashSet<string> packageIds)
             => (mod.PackageIdPlayerFacing != null && packageIds.Contains(mod.PackageIdPlayerFacing))
                 || (mod.PackageId != null && packageIds.Contains(mod.PackageId));
 
-        /// <summary>從執行中的 mod 清單建立受貼圖保護的根目錄；清單尚未建立時下次再試。</summary>
+        // 從執行中的 mod 清單建立受貼圖保護的根目錄；清單尚未建立時下次再試。
         internal static void InitializeTextureRoots()
         {
             if (rootsInitialized) return;
@@ -241,7 +241,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>TextureOverride 模組由 Pumpkin 的 LoadFolders.xml 依 IfModActive 條件載入；沒載入時 Pumpkin 不會取代任何原圖。</summary>
+        // TextureOverride 模組由 Pumpkin 的 LoadFolders.xml 依 IfModActive 條件載入；沒載入時 Pumpkin 不會取代任何原圖。
         private static bool IsPumpkinTextureOverrideLoaded(ModContentPack pumpkin)
             => pumpkin.foldersToLoadDescendingOrder?.Any(static folder => folder != null
                 && folder.Replace('\\', '/').TrimEnd('/').EndsWith("/Modules/TextureOverride", StringComparison.OrdinalIgnoreCase)) is true;
@@ -250,13 +250,13 @@ namespace FasterGameLoading
             => root.Element(listName)?.Elements("li").Select(static li => li.Value.Trim()).Where(static id => id.Length > 0)
                 ?? Enumerable.Empty<string>();
 
-        /// <summary>目前已建立的受貼圖保護根目錄快照（正斜線、無結尾斜線）。</summary>
+        // 目前已建立的受貼圖保護根目錄快照（正斜線、無結尾斜線）。
         internal static IReadOnlyCollection<string> GetProtectedTextureRoots()
         {
             lock (rootsLock) return new List<string>(protectedTextureRoots);
         }
 
-        /// <summary>測試用：直接指定受貼圖保護的根目錄並視為已初始化，繞過需要 RunningMods 的探測。</summary>
+        // 測試用：直接指定受貼圖保護的根目錄並視為已初始化，繞過需要 RunningMods 的探測。
         internal static void SetProtectedTextureRootsForTests(params string[] roots)
         {
             lock (rootsLock)

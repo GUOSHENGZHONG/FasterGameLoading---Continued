@@ -5,14 +5,10 @@ using Verse;
 
 namespace FasterGameLoading
 {
-    /// <summary>
-    /// 通用擴充方法與輔助工具。
-    /// </summary>
+    // 通用擴充方法與輔助工具。
     public static class Utils
     {
-        /// <summary>
-        /// 將路徑中的反斜線統一替換為正斜線，確保跨平台相容性。
-        /// </summary>
+        // 將路徑中的反斜線統一替換為正斜線，確保跨平台相容性。
         public static string NormalizePath(this string path)
         {
             if (path == null) return null;
@@ -49,7 +45,7 @@ namespace FasterGameLoading
                 || IsCommonFurniture(thingDef);
         }
 
-        /// <summary>基礎建築、藍圖、框架，以及有明確 UI 圖示或連結式圖形的定義。</summary>
+        // 基礎建築、藍圖、框架，以及有明確 UI 圖示或連結式圖形的定義。
         private static bool IsBuildingOrBlueprint(ThingDef thingDef)
         {
             return thingDef.designationCategory != null
@@ -60,14 +56,14 @@ namespace FasterGameLoading
                 || (thingDef.thingClass != null && string.Equals(thingDef.thingClass.Name, FGLConsts.BuildingPipe, StringComparison.Ordinal));
         }
 
-        /// <summary>醫療用品。</summary>
+        // 醫療用品。
         private static bool IsMedicine(ThingDef thingDef)
         {
             return typeof(Medicine).IsAssignableFrom(thingDef.thingClass)
                 || string.Equals(thingDef.orderedTakeGroup?.defName, FGLConsts.MedicineDefName, StringComparison.Ordinal);
         }
 
-        /// <summary>武器、裝備、食物與材料等殖民者常用物品。</summary>
+        // 武器、裝備、食物與材料等殖民者常用物品。
         private static bool IsColonistGear(ThingDef thingDef)
         {
             // 食物以 ingestible 屬性檢查，避免在 PostLoad 階段訪問 StatDef
@@ -77,7 +73,7 @@ namespace FasterGameLoading
                 || thingDef.IsStuff;
         }
 
-        /// <summary>分類名稱命中家具／工作台關鍵字的定義。</summary>
+        // 分類名稱命中家具／工作台關鍵字的定義。
         private static bool IsCommonFurniture(ThingDef thingDef)
         {
             if (thingDef.thingCategories == null)

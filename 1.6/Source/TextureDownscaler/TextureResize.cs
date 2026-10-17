@@ -12,12 +12,10 @@ using Color = UnityEngine.Color;
 
 namespace FasterGameLoading
 {
-    /// <summary>
-    /// 紋理降質的整合調度器。協同 CacheManager、Scanner、Resizer 及 PngUtils 執行降質流程。
-    /// </summary>
+    // 紋理降質的整合調度器。協同 CacheManager、Scanner、Resizer 及 PngUtils 執行降質流程。
     public class TextureResize
     {
-        /// <summary>紋理分類，用於決定降質目標尺寸。</summary>
+        // 紋理分類，用於決定降質目標尺寸。
         public enum TextureType
         {
             None, Building, Pawn, Weapon, Apparel, Item, Plant, Tree, Terrain, Mote, Filth, Projectile,
@@ -29,7 +27,7 @@ namespace FasterGameLoading
         private long lastOriginalPixelCount;
         private long lastDownscaledPixelCount;
 
-        /// <summary>單一紋理的縮放候選資訊。</summary>
+        // 單一紋理的縮放候選資訊。
         internal struct TextureResizeCandidate
         {
             public Texture source;
@@ -39,10 +37,10 @@ namespace FasterGameLoading
             public int originalHeight;
         }
 
-        /// <summary>同時在背景讀取的原圖張數。</summary>
+        // 同時在背景讀取的原圖張數。
         private const int OriginalReadAhead = 8;
 
-        /// <summary>主執行緒已縮放完成、正在背景編碼與寫檔的一張紋理。</summary>
+        // 主執行緒已縮放完成、正在背景編碼與寫檔的一張紋理。
         private sealed class PendingWrite
         {
             public TextureResizeCandidate Candidate;
@@ -106,9 +104,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>
-        /// 篩選需要縮放的紋理：尺寸超過目標尺寸且 drawSize 總和 ≤ 8 的紋理。
-        /// </summary>
+        // 篩選需要縮放的紋理：尺寸超過目標尺寸且 drawSize 總和 ≤ 8 的紋理。
         private List<TextureResizeCandidate> BuildResizeCandidates()
         {
             var texturesToResize = new List<TextureResizeCandidate>();
@@ -303,7 +299,7 @@ namespace FasterGameLoading
             return aligned > sourceLength ? length & ~3 : aligned;
         }
 
-        /// <summary>從磁碟讀取原始 PNG，可在背景執行緒呼叫。讀不到時回傳空陣列，由呼叫端使用記憶體中的版本。</summary>
+        // 從磁碟讀取原始 PNG，可在背景執行緒呼叫。讀不到時回傳空陣列，由呼叫端使用記憶體中的版本。
         private static byte[] ReadOriginalBytes(string path)
         {
             try
@@ -318,7 +314,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>在主執行緒解碼 <see cref="ReadOriginalBytes"/> 讀到的原圖。失敗時回傳 false，由呼叫端使用記憶體中的版本。</summary>
+        // 在主執行緒解碼 <see cref="ReadOriginalBytes"/> 讀到的原圖。失敗時回傳 false，由呼叫端使用記憶體中的版本。
         private static bool TryDecodeOriginalTexture(string path, byte[] data, out Texture2D texture)
         {
             texture = null;
@@ -388,14 +384,14 @@ namespace FasterGameLoading
             return true;
         }
 
-        /// <summary>判斷此服裝是否需要以 pack 模式渲染（Utility 層預設為 true）。</summary>
+        // 判斷此服裝是否需要以 pack 模式渲染（Utility 層預設為 true）。
         public static bool RenderAsPack(ThingDef def) => def.apparel.LastLayer.IsUtilityLayer && (def.apparel.wornGraphicData?.renderUtilityAsPack ?? true);
 
         // ════════════════════════════════════════════════════════════════
         //  紋理類型判斷
         // ════════════════════════════════════════════════════════════════
 
-        /// <summary>根據 ThingDef 的屬性判斷其紋理類型。</summary>
+        // 根據 ThingDef 的屬性判斷其紋理類型。
         internal static TextureType GetTextureType(ThingDef thingDef)
         {
             if (thingDef.building != null) return TextureType.Building;

@@ -6,7 +6,7 @@ using Verse;
 
 namespace FasterGameLoading.InGameTests
 {
-    /// <summary>比較遊戲內重複型別查詢的成本；完整啟動時間仍需獨立量測。</summary>
+    // 比較遊戲內重複型別查詢的成本；完整啟動時間仍需獨立量測。
     [BenchmarkClass("FGL type lookup", RunAsync = false, AllowedGameStates = AllowedGameStates.Entry)]
     [Measurement(Benchmark.Measurement.Microseconds)]
     [Table(Stat.Mean | Stat.Median | Stat.StdDev | Stat.Samples)]

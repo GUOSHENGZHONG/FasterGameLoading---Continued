@@ -25,7 +25,7 @@ namespace FasterGameLoading.InGameTests
             Assert.That(delayedActions.IconsToLoadCount).Is.EqualTo(0);
         }
 
-        /// <summary>原版 PostLoad 回呼把 graphicData.Graphic 指給 ThingDef.graphic；漏跑的 Def 會停在 BadGraphic。</summary>
+        // 原版 PostLoad 回呼把 graphicData.Graphic 指給 ThingDef.graphic；漏跑的 Def 會停在 BadGraphic。
         [Test]
         public static void EveryThingDefWithGraphicDataHasGraphic()
         {
@@ -88,7 +88,7 @@ namespace FasterGameLoading.InGameTests
             FglState.AssertNone(failures, "ThingDefs left with BadTex icon");
         }
 
-        /// <summary>非 ThingDef 的 BuildableDef（地形等）只看明確指定的 uiIconPath。</summary>
+        // 非 ThingDef 的 BuildableDef（地形等）只看明確指定的 uiIconPath。
         [Test]
         public static void TerrainIconsFromExplicitPathsAreLoaded()
         {
@@ -120,7 +120,7 @@ namespace FasterGameLoading.InGameTests
         private static string Describe(Graphic g)
             => g == null ? "null" : $"{g.GetType().Name} '{g.path}' mask '{g.maskPath}' {g.Shader?.name} {g.drawSize} {g.color}/{g.colorTwo}";
 
-        /// <summary>GraphicData.Init 會在 GraphicDatabase 的結果外包 RandomRotated／Linked；鍵值要比對最內層。</summary>
+        // GraphicData.Init 會在 GraphicDatabase 的結果外包 RandomRotated／Linked；鍵值要比對最內層。
         private static Graphic Unwrap(Graphic graphic)
         {
             while (true)

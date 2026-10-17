@@ -14,9 +14,7 @@ namespace FasterGameLoading;
 [HarmonyPatch(typeof(ThingDef), "PostLoad")]
 public static class ThingDef_PostLoad_Patch
 {
-    /// <summary>
-    /// 決定是否啟用此補丁（當延遲圖形載入設定開啟時）。
-    /// </summary>
+    // 決定是否啟用此補丁（當延遲圖形載入設定開啟時）。
     public static bool Prepare() => DelayedActions.DeferredVisualsEnabled;
 
     /// <summary>

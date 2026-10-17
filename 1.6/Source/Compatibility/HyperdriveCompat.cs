@@ -18,7 +18,7 @@ namespace FasterGameLoading
         internal const string PackageId = "vopaga.hyperdrive";
         private const string ModTypeName = "RimWorldHyperdrive.HyperdriveMod";
 
-        /// <summary>直接修改遊戲 DLL 的 Hyperdrive 版本會把輔助類別併入 Assembly-CSharp。</summary>
+        // 直接修改遊戲 DLL 的 Hyperdrive 版本會把輔助類別併入 Assembly-CSharp。
         private const string EnginePatchTypeName = "Verse.StartupOptimizer.OptimizedModManager";
 
         /// <summary>
@@ -27,7 +27,7 @@ namespace FasterGameLoading
         /// </summary>
         internal static bool ParallelizesModDefs { get; set; }
 
-        /// <summary>執行中的 Hyperdrive 的 Mod 類別；未啟用時回傳 null。</summary>
+        // 執行中的 Hyperdrive 的 Mod 類別；未啟用時回傳 null。
         internal static Type FindModType()
         {
             foreach (var mod in LoadedModManager.RunningMods)

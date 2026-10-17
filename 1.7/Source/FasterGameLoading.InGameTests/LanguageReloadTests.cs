@@ -16,14 +16,14 @@ namespace FasterGameLoading.InGameTests
     [HarmonyPatch(typeof(LanguageDatabase), nameof(LanguageDatabase.SelectLanguage))]
     internal static class LanguageReload
     {
-        /// <summary>選 FGL 沒有翻譯的語言，讓第 2 輪驗證原版英文退回。</summary>
+        // 選 FGL 沒有翻譯的語言，讓第 2 輪驗證原版英文退回。
         private const string TargetLanguagePrefix = "Japanese";
 
         public static string FromLanguage { get; private set; }
 
         public static string ToLanguage { get; private set; }
 
-        /// <summary>切換前 FGL 提早載入的次數；重載期間提早載入不應重啟。</summary>
+        // 切換前 FGL 提早載入的次數；重載期間提早載入不應重啟。
         public static int EarlyLoadsBeforeReload { get; private set; }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace FasterGameLoading.InGameTests
         }
     }
 
-    /// <summary>只在第 2 輪（語言重載後）才有意義的檢查；第 1 輪直接略過。</summary>
+    // 只在第 2 輪（語言重載後）才有意義的檢查；第 1 輪直接略過。
     [TestFixture(TestType.MainMenu)]
     internal class LanguageReloadTests
     {
@@ -72,7 +72,7 @@ namespace FasterGameLoading.InGameTests
             Expect.AreEqual(LanguageDatabase.activeLanguage.folderName, LanguageReload.ToLanguage, "active language does not match the reload target");
         }
 
-        /// <summary>第 2 輪的語言沒有 FGL 翻譯資料夾，TranslationTests 才真的走到原版英文退回。</summary>
+        // 第 2 輪的語言沒有 FGL 翻譯資料夾，TranslationTests 才真的走到原版英文退回。
         [Test]
         public static void ReloadRoundExercisesEnglishFallback()
         {
@@ -81,7 +81,7 @@ namespace FasterGameLoading.InGameTests
             Expect.IsFalse(Directory.Exists(candidate), "FGL unexpectedly provides translations for the reload language");
         }
 
-        /// <summary>重載時 RunningMods 是一批新的 ModContentPack；FGL 不重啟提早載入，全部交給原版流程。</summary>
+        // 重載時 RunningMods 是一批新的 ModContentPack；FGL 不重啟提早載入，全部交給原版流程。
         [Test]
         public static void EarlyLoadingDidNotRestart()
         {
@@ -92,7 +92,7 @@ namespace FasterGameLoading.InGameTests
             }
         }
 
-        /// <summary>LanguageReloading 沒清掉的話，舊 ModContentPack／handler 會留在集合裡，新的同名 mod 則可能被誤判為已載入。</summary>
+        // LanguageReloading 沒清掉的話，舊 ModContentPack／handler 會留在集合裡，新的同名 mod 則可能被誤判為已載入。
         [Test]
         public static void ContentTrackingOnlyHoldsCurrentModPacks()
         {
@@ -109,7 +109,7 @@ namespace FasterGameLoading.InGameTests
             FglState.AssertNone(failures, "entries from before the reload");
         }
 
-        /// <summary>重載會銷毀所有舊貼圖；FGL 的貼圖快取若還留著它們，之後命中就會拿到已銷毀的貼圖。</summary>
+        // 重載會銷毀所有舊貼圖；FGL 的貼圖快取若還留著它們，之後命中就會拿到已銷毀的貼圖。
         [Test]
         public static void TextureCacheHoldsNoDestroyedTextures()
         {

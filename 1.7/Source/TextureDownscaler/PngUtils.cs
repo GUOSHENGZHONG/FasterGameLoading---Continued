@@ -4,12 +4,10 @@ using System.IO;
 
 namespace FasterGameLoading;
 
-/// <summary>
-/// PNG 二進位檔案解析工具，免載入整張圖即可讀取解析度。
-/// </summary>
+// PNG 二進位檔案解析工具，免載入整張圖即可讀取解析度。
 public static class PngUtils
 {
-    /// <summary>嘗試從 PNG 檔案標頭讀取尺寸（不載入完整圖片）。</summary>
+    // 嘗試從 PNG 檔案標頭讀取尺寸（不載入完整圖片）。
     public static bool TryGetImageDimensions(string path, ref int width, ref int height)
     {
         try
@@ -22,7 +20,7 @@ public static class PngUtils
         catch (System.UnauthorizedAccessException) { return false; }
     }
 
-    /// <summary>從 PNG 檔案串流讀取 IHDR chunk 中的寬高。</summary>
+    // 從 PNG 檔案串流讀取 IHDR chunk 中的寬高。
     private static bool TryReadPngDimensions(Stream stream, ref int width, ref int height)
     {
         stream.Position = 0;

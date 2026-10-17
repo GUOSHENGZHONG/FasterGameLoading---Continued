@@ -107,7 +107,7 @@ namespace FasterGameLoading.InGameTests
             }
         }
 
-        /// <summary>原始檔被 mod 更新（大小或時間變了）後，舊的降質快取必須作廢、改載原始貼圖。</summary>
+        // 原始檔被 mod 更新（大小或時間變了）後，舊的降質快取必須作廢、改載原始貼圖。
         [Test]
         public static void StaleCacheFallsBackToOriginalTexture()
         {
@@ -209,7 +209,7 @@ namespace FasterGameLoading.InGameTests
             }
         }
 
-        /// <summary>在目前模組的載入目錄產生暫存原圖與降質快取，結束時清掉。</summary>
+        // 在目前模組的載入目錄產生暫存原圖與降質快取，結束時清掉。
         private sealed class Probe : IDisposable
         {
             public const string FileNameWithoutExtension = "FglDownscaleProbe";
@@ -243,7 +243,7 @@ namespace FasterGameLoading.InGameTests
 
             public Texture2D Load() => loaded = LoadTexture(originalFile);
 
-            /// <summary>對照組：將快取 PNG 複製到已掛載的模組目錄，再由原版流程載入。</summary>
+            // 對照組：將快取 PNG 複製到已掛載的模組目錄，再由原版流程載入。
             public Texture2D LoadCacheFileDirectly()
             {
                 File.Copy(cachePath, vanillaReferencePath, overwrite: true);

@@ -14,7 +14,7 @@ namespace FasterGameLoading.InGameTests
     [TestSuite]
     internal static class XmlLoadingTests
     {
-        /// <summary>與 ModContentPack.LoadDefs／LoadPatches 傳入的資料夾字串相同。</summary>
+        // 與 ModContentPack.LoadDefs／LoadPatches 傳入的資料夾字串相同。
         private static readonly string[] Folders = { "Defs/", "Patches/" };
 
         [Test]
@@ -69,7 +69,7 @@ namespace FasterGameLoading.InGameTests
         }
     }
 
-    /// <summary>未套用任何 patch 的原版 XmlAssetsInModFolder 副本。</summary>
+    // 未套用任何 patch 的原版 XmlAssetsInModFolder 副本。
     [HarmonyPatch]
     internal static class VanillaXml
     {

@@ -36,7 +36,7 @@ public static class Startup
         ScheduleDeferredStartupActions();
     }
 
-    /// <summary>在背景執行緒啟動過期／無效的材質快取自動清理，避免阻塞啟動流程與主頁面。</summary>
+    // 在背景執行緒啟動過期／無效的材質快取自動清理，避免阻塞啟動流程與主頁面。
     private static void StartBackgroundCacheCleanup()
     {
         System.Threading.Tasks.Task.Run(() =>
@@ -52,7 +52,7 @@ public static class Startup
         });
     }
 
-    /// <summary>注入翻譯；包在 try/catch 內，避免例外中斷 StaticConstructorOnStartupUtility.CallAll。</summary>
+    // 注入翻譯；包在 try/catch 內，避免例外中斷 StaticConstructorOnStartupUtility.CallAll。
     private static void InjectTranslations()
     {
         try
@@ -65,7 +65,7 @@ public static class Startup
         }
     }
 
-    /// <summary>透過 LongEventHandler 排程設定寫入與延遲動作，以避免阻塞啟動流程。</summary>
+    // 透過 LongEventHandler 排程設定寫入與延遲動作，以避免阻塞啟動流程。
     private static void ScheduleDeferredStartupActions()
     {
         try

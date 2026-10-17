@@ -44,7 +44,7 @@ namespace FasterGameLoading.Tests.TextureDownscaler
 
         private string StagingDir => Path.Combine(rootDir, FGLConsts.TextureCacheStagingDir);
 
-        /// <summary>在 rebuild 的暫存目錄寫一個快取檔並登記，回傳暫存路徑。</summary>
+        // 在 rebuild 的暫存目錄寫一個快取檔並登記，回傳暫存路徑。
         private static string StageFile(TextureCacheManager.CacheRebuild rebuild, string originalPath, byte content)
         {
             string stagedPath = rebuild.GetCachePath(originalPath);

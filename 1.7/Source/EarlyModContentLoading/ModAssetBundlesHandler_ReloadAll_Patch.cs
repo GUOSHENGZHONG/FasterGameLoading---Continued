@@ -22,14 +22,10 @@ public static class ModAssetBundlesHandler_ReloadAll_Patch
         SessionLifecycle.On(LifecyclePhase.LanguageReloading, () => reloadedHandlers.Clear());
     }
 
-    /// <summary>
-    /// 前置攔截：若是該 handler 已經載入過，則直接跳過 ReloadAll 執行。
-    /// </summary>
+    // 前置攔截：若是該 handler 已經載入過，則直接跳過 ReloadAll 執行。
     public static bool Prefix(ModAssetBundlesHandler __instance) => !reloadedHandlers.Contains(__instance);
 
-    /// <summary>
-    /// 後置處理：將已完成 ReloadAll 的 handler 紀錄到已載入的清單中。
-    /// </summary>
+    // 後置處理：將已完成 ReloadAll 的 handler 紀錄到已載入的清單中。
     public static void Postfix(ModAssetBundlesHandler __instance)
     {
         reloadedHandlers.Add(__instance);

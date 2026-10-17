@@ -19,7 +19,7 @@ internal static class CoreSoundPrewarmer
     // 與 UnityStubs 的 Resources.AudioClipExtensions 相同（該欄位為 private）。
     private static readonly string[] AudioExtensions = [".mp3", ".ogg", ".aac", ".wav", ".flac", ".m4a"];
 
-    /// <summary>由 Mod 建構子呼叫。</summary>
+    // 由 Mod 建構子呼叫。
     internal static void Start()
     {
         if (!FasterGameLoadingSettings.EnableMultiThreading) return;

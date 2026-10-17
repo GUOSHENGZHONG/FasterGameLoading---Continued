@@ -13,7 +13,7 @@ namespace FasterGameLoading
     /// </summary>
     public static class LoadedTextureRegistry
     {
-        /// <summary>完整檔案路徑 → 貼圖。</summary>
+        // 完整檔案路徑 → 貼圖。
         private static readonly ConcurrentDictionary<string, WeakReference<Texture2D>> texturesByPath =
             new ConcurrentDictionary<string, WeakReference<Texture2D>>(StringComparer.Ordinal);
 
@@ -40,7 +40,7 @@ namespace FasterGameLoading
             SessionLifecycle.On(LifecyclePhase.LanguageReloading, Clear);
         }
 
-        /// <summary>清空所有登記（語言切換時舊貼圖會被銷毀重載）。</summary>
+        // 清空所有登記（語言切換時舊貼圖會被銷毀重載）。
         internal static void Clear()
         {
             texturesByPath.Clear();
@@ -49,7 +49,7 @@ namespace FasterGameLoading
             skippedForBaking.Clear();
         }
 
-        /// <summary>登記 <paramref name="fullPath"/> 目前對應的貼圖；同一路徑的舊貼圖會從反向查找表移除。</summary>
+        // 登記 <paramref name="fullPath"/> 目前對應的貼圖；同一路徑的舊貼圖會從反向查找表移除。
         public static void Record(string fullPath, Texture2D texture)
         {
             if (ReferenceEquals(texture, null)) return;
@@ -86,7 +86,7 @@ namespace FasterGameLoading
             return false;
         }
 
-        /// <summary>貼圖的來源檔案路徑；非 Texture2D（如 RenderTexture）或未登記的貼圖回傳 false。</summary>
+        // 貼圖的來源檔案路徑；非 Texture2D（如 RenderTexture）或未登記的貼圖回傳 false。
         public static bool TryGetPath(Texture texture, out string fullPath)
         {
             if (texture is Texture2D t2d && !ReferenceEquals(t2d, null) && pathsByTexture.TryGetValue(t2d, out var holder))
@@ -98,7 +98,7 @@ namespace FasterGameLoading
             return false;
         }
 
-        /// <summary>所有 C# 物件仍存活的已登記貼圖與其路徑的快照。</summary>
+        // 所有 C# 物件仍存活的已登記貼圖與其路徑的快照。
         public static IReadOnlyList<KeyValuePair<Texture2D, string>> Snapshot()
         {
             var alive = new List<KeyValuePair<Texture2D, string>>();
@@ -112,13 +112,13 @@ namespace FasterGameLoading
             return alive;
         }
 
-        /// <summary>取消 <paramref name="fullPath"/> 的登記，下次載入同一路徑會重新讀檔。</summary>
+        // 取消 <paramref name="fullPath"/> 的登記，下次載入同一路徑會重新讀檔。
         public static void Forget(string fullPath)
         {
             texturesByPath.TryRemove(fullPath, out _);
         }
 
-        /// <summary>貼圖屬於排除烘焙的目標 Mod 時，登記它不進入靜態圖集。</summary>
+        // 貼圖屬於排除烘焙的目標 Mod 時，登記它不進入靜態圖集。
         public static void MarkSkipBakingIfProtected(string fullPath, Texture2D texture)
         {
             if (texture != null && ProtectedMods.ShouldSkipBaking(fullPath))
@@ -127,7 +127,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>貼圖是否已登記為排除靜態圖集烘焙。</summary>
+        // 貼圖是否已登記為排除靜態圖集烘焙。
         public static bool IsSkippedForBaking(Texture2D texture)
         {
             // ConcurrentDictionary.ContainsKey(null) 會拋例外，故 null 先短路。

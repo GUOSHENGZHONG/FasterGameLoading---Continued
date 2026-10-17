@@ -66,7 +66,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>掃描過程的累計數，於各 group 之間就地累加。</summary>
+        // 掃描過程的累計數，於各 group 之間就地累加。
         [StructLayout(LayoutKind.Auto)]
         private struct MaskScanCounters
         {
@@ -76,9 +76,7 @@ namespace FasterGameLoading
             public int Issues;
         }
 
-        /// <summary>
-        /// 檢查單一圖集群組中每張 main 貼圖的 mask 配對狀況，把可疑項目以 Warning 印出。
-        /// </summary>
+        // 檢查單一圖集群組中每張 main 貼圖的 mask 配對狀況，把可疑項目以 Warning 印出。
         private static void InspectGroup(string context, TextureAtlasGroupKey key, List<Texture2D> mainTextures, ref MaskScanCounters counters)
         {
             counters.Groups++;

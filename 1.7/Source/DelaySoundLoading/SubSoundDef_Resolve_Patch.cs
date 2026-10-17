@@ -22,9 +22,7 @@ static class SubSoundDef_ResolvePatch
     static IEnumerable<CodeInstruction> LateExecute(IEnumerable<CodeInstruction> codeInstructions)
         => ThingDef_PostLoad_Patch.SwapExecuteWhenFinished(codeInstructions, AccessTools.Method(typeof(SubSoundDef_ResolvePatch), nameof(ExecuteDelayed)));
 
-    /// <summary>
-    /// 將音效解析動作排入延遲佇列，之後由 DelayedActions 的協程批次處理。
-    /// </summary>
+    // 將音效解析動作排入延遲佇列，之後由 DelayedActions 的協程批次處理。
     static void ExecuteDelayed(Action action, SubSoundDef def)
     {
         if (action == null)

@@ -69,7 +69,7 @@ namespace FasterGameLoading.InGameTests
             FglState.AssertNone(failures, "warmed full-name lookups differing from vanilla");
         }
 
-        /// <summary>跨 session 名稱對照（短名稱 → FullName）必須指向原版會解析到的同一個型別。</summary>
+        // 跨 session 名稱對照（短名稱 → FullName）必須指向原版會解析到的同一個型別。
         [Test]
         public static void SessionMappingsMatchVanilla()
         {
@@ -133,7 +133,7 @@ namespace FasterGameLoading.InGameTests
         }
     }
 
-    /// <summary>未套用任何 patch 的原版 GetTypeInAnyAssemblyInt 副本。</summary>
+    // 未套用任何 patch 的原版 GetTypeInAnyAssemblyInt 副本。
     [HarmonyPatch]
     internal static class VanillaLookup
     {
@@ -152,13 +152,13 @@ namespace FasterGameLoading.InGameTests
     {
         public static int Loads;
 
-        /// <summary>由 FGL 提早載入（而非原版 ExecuteWhenFinished）觸發的載入次數。</summary>
+        // 由 FGL 提早載入（而非原版 ExecuteWhenFinished）觸發的載入次數。
         public static int EarlyLoads;
 
-        /// <summary>載入當下缺少任一 FGL patch 的紀錄（已格式化成失敗訊息）。</summary>
+        // 載入當下缺少任一 FGL patch 的紀錄（已格式化成失敗訊息）。
         public static readonly List<string> LoadedBeforePatches = new List<string>();
 
-        /// <summary>由 FGL 提早載入的 mod，供相容性測試確認排除名單內的 mod 沒被提早載入。</summary>
+        // 由 FGL 提早載入的 mod，供相容性測試確認排除名單內的 mod 沒被提早載入。
         public static readonly List<ModContentPack> EarlyLoadedMods = new List<ModContentPack>();
 
         [HarmonyPriority(HarmonyLib.Priority.First)]
@@ -185,7 +185,7 @@ namespace FasterGameLoading.InGameTests
         }
     }
 
-    /// <summary>標記目前執行緒正處於 FGL 提早載入的 ReloadContentInt 呼叫中，供 <see cref="ContentLoadProbe"/> 分類。</summary>
+    // 標記目前執行緒正處於 FGL 提早載入的 ReloadContentInt 呼叫中，供 <see cref="ContentLoadProbe"/> 分類。
     // 掛在 LoadOneModContent：它自行攔下所有例外，postfix 一定會執行；
     // 不掛 InvokeReloadContentInt，Harmony 無法替含 exception filter（catch when）的方法產生 finalizer。
     [HarmonyPatch(typeof(EarlyModContentLoader), nameof(EarlyModContentLoader.LoadOneModContent))]
@@ -249,7 +249,7 @@ namespace FasterGameLoading.InGameTests
         }
     }
 
-    /// <summary>提早載入與重複載入防護的最終狀態。</summary>
+    // 提早載入與重複載入防護的最終狀態。
     [TestFixture(TestType.MainMenu)]
     internal sealed class EarlyLoadingTests
     {
@@ -261,7 +261,7 @@ namespace FasterGameLoading.InGameTests
             Expect.IsTrue(FasterGameLoadingMod.delayedActions.earlyLoadingComplete);
         }
 
-        /// <summary>每個執行中的 mod 都要經過（提早或原版的）ReloadContentInt，漏掉的 mod 沒有貼圖與音效。</summary>
+        // 每個執行中的 mod 都要經過（提早或原版的）ReloadContentInt，漏掉的 mod 沒有貼圖與音效。
         [Test]
         public static void EveryRunningModContentWasLoaded()
         {
@@ -307,7 +307,7 @@ namespace FasterGameLoading.InGameTests
             Expect.IsFalse(HyperdriveCompat.ParallelizesModDefs);
         }
 
-        /// <summary>提早載入延到所有 Mod 建構子之後才開始，但仍須在原版載入前實際載入內容，否則加速效果消失。</summary>
+        // 提早載入延到所有 Mod 建構子之後才開始，但仍須在原版載入前實際載入內容，否則加速效果消失。
         [Test]
         public static void EarlyLoadingActuallyLoadsModContent()
         {
@@ -319,9 +319,7 @@ namespace FasterGameLoading.InGameTests
         }
 
 
-        /// <summary>
-        /// 每個 handler 都要經過 FGL 的 ReloadAll 防重複機制；重複呼叫 ReloadAll 會讓原版記下「Could not load asset bundle」。
-        /// </summary>
+        // 每個 handler 都要經過 FGL 的 ReloadAll 防重複機制；重複呼叫 ReloadAll 會讓原版記下「Could not load asset bundle」。
         [Test]
         public static void EveryAssetBundleHandlerReloadedWithoutReloadErrors()
         {
@@ -333,7 +331,7 @@ namespace FasterGameLoading.InGameTests
             FglState.AssertNone(failures, "asset bundle handler problems");
         }
 
-        /// <summary>原版遇到同名 Def 會改名後照樣加入資料庫，重複載入只能從「Adding duplicate」錯誤得知。</summary>
+        // 原版遇到同名 Def 會改名後照樣加入資料庫，重複載入只能從「Adding duplicate」錯誤得知。
         [Test]
         public static void NoDuplicateDefsWereAdded()
         {

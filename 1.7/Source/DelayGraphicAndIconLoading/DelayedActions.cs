@@ -11,16 +11,16 @@ using Verse.Sound;
 
 namespace FasterGameLoading;
 
-/// <summary>延遲視覺管線目前進行到的階段。</summary>
+// 延遲視覺管線目前進行到的階段。
 public enum DeferredPhase
 {
-    /// <summary>尚未開始（或語言切換後重置）。</summary>
+    // 尚未開始（或語言切換後重置）。
     Idle,
     Graphics,
     Icons,
     AtlasBake,
     Sounds,
-    /// <summary>整條管線（含圖集烘焙與音效解析）已跑完。</summary>
+    // 整條管線（含圖集烘焙與音效解析）已跑完。
     Completed,
 }
 
@@ -33,7 +33,7 @@ public enum DeferredPhase
 public class DelayedActions : MonoBehaviour
 {
     // ── 每幀時間預算 ──
-    /// <summary>遊戲中每幀最多佔用 8ms，主選單中最多 50ms。</summary>
+    // 遊戲中每幀最多佔用 8ms，主選單中最多 50ms。
     public static float MaxImpactThisFrame => Current.Game != null ? 0.008f : 0.05f;
 
     // ── 啟動時定案的設定 ──
@@ -50,14 +50,14 @@ public class DelayedActions : MonoBehaviour
         capturedDeferredVisuals = FasterGameLoadingSettings.DelayGraphicLoading;
     }
 
-    /// <summary>單元測試用：回到「尚未定案」，之後直接讀設定值。</summary>
+    // 單元測試用：回到「尚未定案」，之後直接讀設定值。
     internal static void ReleaseStartupSettingsForTests()
     {
         capturedDeferredVisuals = null;
         adaptiveBakingForTests = null;
     }
 
-    /// <summary>本次遊戲行程是否啟用延遲視覺管線。尚未定案時（只發生在單元測試）直接讀設定。</summary>
+    // 本次遊戲行程是否啟用延遲視覺管線。尚未定案時（只發生在單元測試）直接讀設定。
     internal static bool DeferredVisualsEnabled => capturedDeferredVisuals ?? FasterGameLoadingSettings.DelayGraphicLoading;
 
     private static bool? adaptiveBakingForTests;
@@ -70,7 +70,7 @@ public class DelayedActions : MonoBehaviour
     /// </summary>
     internal static bool AdaptiveBakingEnabled => adaptiveBakingForTests ?? false;
 
-    /// <summary>單元測試用：強制回報自適應烘焙的開關，以驗證略過烘焙的邏輯；傳入 null 還原為 1.7 的恆為 false。</summary>
+    // 單元測試用：強制回報自適應烘焙的開關，以驗證略過烘焙的邏輯；傳入 null 還原為 1.7 的恆為 false。
     internal static void SetAdaptiveBakingForTests(bool? enabled) => adaptiveBakingForTests = enabled;
 
     // ── 原版靜態圖集烘焙的放行 ──
@@ -83,7 +83,7 @@ public class DelayedActions : MonoBehaviour
     /// </summary>
     internal static bool AllowsVanillaStaticBake => !DeferredVisualsEnabled || vanillaStaticBakeAllowed;
 
-    /// <summary>延遲視覺管線目前的階段；<see cref="DeferredPhase.Completed"/> 代表整條管線已跑完。</summary>
+    // 延遲視覺管線目前的階段；<see cref="DeferredPhase.Completed"/> 代表整條管線已跑完。
     public DeferredPhase Phase { get; private set; }
 
     static DelayedActions()
@@ -124,7 +124,7 @@ public class DelayedActions : MonoBehaviour
         subSoundDefToResolve.Enqueue(def);
     }
 
-    /// <summary>語言切換時丟棄所有尚未執行的延遲動作，並回到尚未開始的階段。</summary>
+    // 語言切換時丟棄所有尚未執行的延遲動作，並回到尚未開始的階段。
     public void ClearQueues()
     {
         graphicsToLoad.Clear();
@@ -140,7 +140,7 @@ public class DelayedActions : MonoBehaviour
 
     public bool earlyLoadingComplete => earlyModContentLoader.EarlyLoadingComplete;
 
-    /// <summary>目前幀的時間預算是否已耗盡。</summary>
+    // 目前幀的時間預算是否已耗盡。
     public bool IsOverBudget => (float)stopwatch.ElapsedTicks / Stopwatch.Frequency >= MaxImpactThisFrame;
 
     internal void RestartStopwatch() => stopwatch.Restart();
@@ -218,9 +218,7 @@ public class DelayedActions : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 執行靜態圖集烘焙：一律交給原版 BakeStaticAtlases（1.7 不使用自適應烘焙，見 <see cref="AdaptiveBakingEnabled"/>）。
-    /// </summary>
+    // 執行靜態圖集烘焙：一律交給原版 BakeStaticAtlases（1.7 不使用自適應烘焙，見 <see cref="AdaptiveBakingEnabled"/>）。
     private static void BakeDeferredAtlases()
     {
         FGLLog.Message("Starting deferred vanilla static atlas baking");
@@ -267,7 +265,7 @@ public class DelayedActions : MonoBehaviour
         }
     }
 
-    /// <summary>在時間預算內批次載入延遲的圖形紋理；載入成功的 ThingDef 加入 <paramref name="loadedDefs"/>，供更新地圖網格。</summary>
+    // 在時間預算內批次載入延遲的圖形紋理；載入成功的 ThingDef 加入 <paramref name="loadedDefs"/>，供更新地圖網格。
     internal IEnumerator LoadDeferredGraphicsCoroutine(ICollection<ThingDef> loadedDefs)
     {
         FGLLog.Message($"Starting deferred graphics: {GraphicsToLoadCount.ToString(CultureInfo.InvariantCulture)}");
@@ -349,7 +347,7 @@ public class DelayedActions : MonoBehaviour
         return thingsToDirty;
     }
 
-    /// <summary>在時間預算內批次載入延遲的圖示紋理。</summary>
+    // 在時間預算內批次載入延遲的圖示紋理。
     internal IEnumerator LoadDeferredIconsCoroutine()
     {
         FGLLog.Message($"Starting deferred icons: {IconsToLoadCount.ToString(CultureInfo.InvariantCulture)}");
@@ -419,7 +417,7 @@ public class DelayedActions : MonoBehaviour
     /// </summary>
     internal void ResolveSubSoundNow(SubSoundDef def) => TryRunPendingSubSound(def, logError: false);
 
-    /// <summary>取走並執行 SubSoundDef 尚未執行的解析動作；已被播放請求先行解析的直接略過。</summary>
+    // 取走並執行 SubSoundDef 尚未執行的解析動作；已被播放請求先行解析的直接略過。
     private void TryRunPendingSubSound(SubSoundDef def, bool logError)
     {
         if (pendingSubSounds.TryRemove(def, out var run))
@@ -428,7 +426,7 @@ public class DelayedActions : MonoBehaviour
         }
     }
 
-    /// <summary>執行單一 SubSound 延遲動作；個別例外只記錄不外傳，避免中斷批次流程。</summary>
+    // 執行單一 SubSound 延遲動作；個別例外只記錄不外傳，避免中斷批次流程。
     private static void TryRunSubSoundAction(SubSoundDef def, Action run, bool logError)
     {
         try

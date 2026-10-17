@@ -6,9 +6,7 @@ using Verse;
 
 namespace FasterGameLoading
 {
-    /// <summary>
-    /// Image Opt 相容性檢查器。
-    /// </summary>
+    // Image Opt 相容性檢查器。
     public static class ImageOptCompat
     {
         private static readonly byte[] ddsMagic = { (byte)'D', (byte)'D', (byte)'S', (byte)' ' };
@@ -101,9 +99,7 @@ namespace FasterGameLoading
             return new[] { ".png", ".jpg", ".jpeg" }.Any(ext => File.Exists(sourcePath + ext));
         }
 
-        /// <summary>
-        /// 快取種類單次分派：長後綴必須優先判斷（.dds.zstd 結尾亦符合 .dds 結尾）。
-        /// </summary>
+        // 快取種類單次分派：長後綴必須優先判斷（.dds.zstd 結尾亦符合 .dds 結尾）。
         private enum DdsCacheKind
         {
             None,

@@ -5,9 +5,7 @@ using FasterGameLoading;
 
 namespace FasterGameLoading.Tests
 {
-    /// <summary>
-    /// 建立不需要 Unity GameObject 的測試 fixture。
-    /// </summary>
+    // 建立不需要 Unity GameObject 的測試 fixture。
     internal static class TestFixtures
     {
         public static byte[] CreatePngHeader(int width, int height)

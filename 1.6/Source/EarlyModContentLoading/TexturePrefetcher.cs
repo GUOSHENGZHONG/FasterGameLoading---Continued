@@ -29,7 +29,7 @@ namespace FasterGameLoading
 
         internal static bool ShouldRun => FasterGameLoadingSettings.EnableMultiThreading && TextureOwnership.FglOwnsTextureLoading;
 
-        /// <summary>由 Mod 建構子呼叫：此時已知道所有執行中的 mod，貼圖內容尚未開始載入。</summary>
+        // 由 Mod 建構子呼叫：此時已知道所有執行中的 mod，貼圖內容尚未開始載入。
         internal static void Start()
         {
             if (!ShouldRun || buffer != null) return;
@@ -44,7 +44,7 @@ namespace FasterGameLoading
             Task.Factory.StartNew(() => Run(started, mods, downscaledOriginals), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
-        /// <summary>取出預讀好的檔案內容；沒有預讀或已停止時回傳 false。</summary>
+        // 取出預讀好的檔案內容；沒有預讀或已停止時回傳 false。
         internal static bool TryTake(string path, out byte[] data)
         {
             var current = buffer;
@@ -58,7 +58,7 @@ namespace FasterGameLoading
 
         internal static bool IsRunning => buffer != null;
 
-        /// <summary>最近一次停止的預讀統計；尚未執行或仍在執行時為 null。只保留數字，暫存區本身停止後即可回收。</summary>
+        // 最近一次停止的預讀統計；尚未執行或仍在執行時為 null。只保留數字，暫存區本身停止後即可回收。
         internal static TexturePrefetchStats LastRun { get; private set; }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <param name="group">檔案所屬 mod 在載入順序中的位置；同一個 mod 的貼圖一定依序載入。</param>
+        // 參數 group：檔案所屬 mod 在載入順序中的位置；同一個 mod 的貼圖一定依序載入。
         private static void Prefetch(TexturePrefetchBuffer prefetch, int group, FileInfo file, HashSet<string> downscaledOriginals)
         {
             var path = file.FullName;
@@ -159,7 +159,7 @@ namespace FasterGameLoading
         }
     }
 
-    /// <summary>一次背景預讀結束時的統計。</summary>
+    // 一次背景預讀結束時的統計。
     internal sealed class TexturePrefetchStats
     {
         internal TexturePrefetchStats(int hits, long hitBytes, int misses, int evicted)
@@ -176,7 +176,7 @@ namespace FasterGameLoading
         internal int Evicted { get; }
     }
 
-    /// <summary>主執行緒載入貼圖時，原版 ModContentLoader 以這個方法讀檔；有預讀好的內容就直接回傳。</summary>
+    // 主執行緒載入貼圖時，原版 ModContentLoader 以這個方法讀檔；有預讀好的內容就直接回傳。
     [HarmonyPatch(typeof(FilesystemFile), nameof(FilesystemFile.ReadAllBytes))]
     public static class FilesystemFile_ReadAllBytes_Patch
     {

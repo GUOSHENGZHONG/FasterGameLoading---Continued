@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace FasterGameLoading.Tests.EarlyModContentLoading;
 
-/// <summary>手動執行的局部基準；不以時間門檻判斷正確性，也不代表完整啟動時間。</summary>
+// 手動執行的局部基準；不以時間門檻判斷正確性，也不代表完整啟動時間。
 [TestFixture, NonParallelizable]
 public class TypeLookupBenchmarks
 {

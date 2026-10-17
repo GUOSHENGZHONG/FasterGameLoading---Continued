@@ -187,7 +187,7 @@ public class ProtectedModsTests
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "TextureOverrideSettings.xml"), settingsXml);
     }
 
-    /// <summary>建立 Pumpkin Library；<paramref name="textureOverrideLoaded"/> 模擬 LoadFolders.xml 是否載入了 TextureOverride 模組。</summary>
+    // 建立 Pumpkin Library；<paramref name="textureOverrideLoaded"/> 模擬 LoadFolders.xml 是否載入了 TextureOverride 模組。
     private static ModContentPack CreatePumpkinMod(string rootDir, bool textureOverrideLoaded = true, string packageId = "pumpkin.pumpkinlibrary", string packageIdPlayerFacing = null)
     {
         var mod = CreateMod(packageId, rootDir, packageIdPlayerFacing);

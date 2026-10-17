@@ -19,7 +19,7 @@ namespace FasterGameLoading
         private readonly Dictionary<string, byte[]> buffered = new(StringComparer.Ordinal);
         private readonly Dictionary<int, Queue<(long sequence, string path)>> bufferOrderByGroup = new();
         private readonly Dictionary<int, long> consumedSequenceByGroup = new();
-        /// <summary>主執行緒在預讀端登記前就自行讀取的檔案；預讀端登記到它們時直接越過。</summary>
+        // 主執行緒在預讀端登記前就自行讀取的檔案；預讀端登記到它們時直接越過。
         private readonly HashSet<string> readBeforeRegistered = new(StringComparer.Ordinal);
         private long nextSequence;
         private long bufferedBytes;
@@ -32,16 +32,16 @@ namespace FasterGameLoading
 
         internal long BudgetBytes { get; }
 
-        /// <summary>從記憶體取用的檔案數。</summary>
+        // 從記憶體取用的檔案數。
         internal int Hits { get; private set; }
 
-        /// <summary>從記憶體取用的總位元組數。</summary>
+        // 從記憶體取用的總位元組數。
         internal long HitBytes { get; private set; }
 
-        /// <summary>主執行緒自行讀檔的次數（預讀端尚未讀到、或已被淘汰）。</summary>
+        // 主執行緒自行讀檔的次數（預讀端尚未讀到、或已被淘汰）。
         internal int Misses { get; private set; }
 
-        /// <summary>已預讀但被略過而淘汰的檔案數。</summary>
+        // 已預讀但被略過而淘汰的檔案數。
         internal int Evicted { get; private set; }
 
         internal bool IsStopped
@@ -86,7 +86,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>存入讀好的內容；讀檔期間主執行緒已越過這個檔案時丟棄。</summary>
+        // 存入讀好的內容；讀檔期間主執行緒已越過這個檔案時丟棄。
         internal void Store(int group, long sequence, string path, byte[] data)
         {
             lock (gate)
@@ -103,7 +103,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>取出預讀好的內容；沒有時回傳 false，由呼叫端自行讀檔。每個項目只能取用一次。</summary>
+        // 取出預讀好的內容；沒有時回傳 false，由呼叫端自行讀檔。每個項目只能取用一次。
         internal bool TryTake(string path, out byte[] data)
         {
             lock (gate)
@@ -140,7 +140,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>停止預讀並釋放所有暫存內容；等待中的預讀端會被喚醒並結束。</summary>
+        // 停止預讀並釋放所有暫存內容；等待中的預讀端會被喚醒並結束。
         internal void Stop()
         {
             lock (gate)
@@ -159,7 +159,7 @@ namespace FasterGameLoading
         private bool IsPassed(int group, long sequence)
             => consumedSequenceByGroup.TryGetValue(group, out var consumed) && sequence <= consumed;
 
-        /// <summary>主執行緒已處理到 <paramref name="group"/> 的 <paramref name="sequence"/>：淘汰同組更早而未被取用的項目。</summary>
+        // 主執行緒已處理到 <paramref name="group"/> 的 <paramref name="sequence"/>：淘汰同組更早而未被取用的項目。
         private void Advance(int group, long sequence)
         {
             if (IsPassed(group, sequence)) return;

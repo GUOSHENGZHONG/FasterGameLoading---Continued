@@ -17,13 +17,13 @@ namespace FasterGameLoading
         private static readonly ConcurrentQueue<LoadRequest> pending = new ConcurrentQueue<LoadRequest>();
         private static bool draining;
 
-        /// <summary>背景執行緒等待主執行緒代為載入貼圖的上限。可於測試中調低。</summary>
+        // 背景執行緒等待主執行緒代為載入貼圖的上限。可於測試中調低。
         internal static int RedirectTimeoutMs { get; set; } = 10_000;
 
-        /// <summary>主執行緒實際執行的載入；測試以替身取代，因為 headless 環境沒有 Unity 圖形裝置。</summary>
+        // 主執行緒實際執行的載入；測試以替身取代，因為 headless 環境沒有 Unity 圖形裝置。
         internal static Func<VirtualFile, Texture2D> LoadOnMainThread { get; set; } = static file => ModContentLoader<Texture2D>.LoadTexture(file);
 
-        /// <summary>尚未被主執行緒取走的請求數。</summary>
+        // 尚未被主執行緒取走的請求數。
         internal static int PendingCount => pending.Count;
 
         private sealed class LoadRequest
@@ -38,7 +38,7 @@ namespace FasterGameLoading
             public readonly ManualResetEventSlim CompletedEvent = new ManualResetEventSlim(initialState: false);
             private int state;
 
-            /// <summary>主執行緒取得處理權；請求已被等待端放棄時回傳 false。</summary>
+            // 主執行緒取得處理權；請求已被等待端放棄時回傳 false。
             public bool TryTake()
             {
                 return Interlocked.CompareExchange(ref state, Taken, Pending) is Pending;
@@ -83,9 +83,7 @@ namespace FasterGameLoading
             return request.Result;
         }
 
-        /// <summary>
-        /// 主執行緒呼叫：處理所有待處理請求。載入過程中重入（例如載入觸發另一次泵送）時直接返回，不遞迴消費佇列。
-        /// </summary>
+        // 主執行緒呼叫：處理所有待處理請求。載入過程中重入（例如載入觸發另一次泵送）時直接返回，不遞迴消費佇列。
         public static void Drain()
         {
             if (draining) return;

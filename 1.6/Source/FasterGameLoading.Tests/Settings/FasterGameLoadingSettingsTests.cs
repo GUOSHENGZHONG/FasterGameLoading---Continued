@@ -295,7 +295,7 @@ namespace FasterGameLoading.Tests.Settings
             }
         }
 
-        /// <summary>只跑 LoadingVars 一輪（沒有 Scribe_Deep 登記，不會觸發 PostLoadInit 的 mod 清單比對）。</summary>
+        // 只跑 LoadingVars 一輪（沒有 Scribe_Deep 登記，不會觸發 PostLoadInit 的 mod 清單比對）。
         private static void LoadSettings(string path)
         {
             Verse.Scribe.loader.InitLoading(path);

@@ -13,15 +13,13 @@ namespace FasterGameLoading
     {
         private static volatile bool resetBySelectLanguage;
 
-        /// <summary>LanguageDatabase.SelectLanguage 已在主執行緒重置過；接下來的這次清除不再重複。</summary>
+        // LanguageDatabase.SelectLanguage 已在主執行緒重置過；接下來的這次清除不再重複。
         internal static void MarkResetBySelectLanguage() => resetBySelectLanguage = true;
 
-        /// <summary>這次語言切換沒有執行原版（不會清除），撤銷 <see cref="MarkResetBySelectLanguage"/>。</summary>
+        // 這次語言切換沒有執行原版（不會清除），撤銷 <see cref="MarkResetBySelectLanguage"/>。
         internal static void ClearResetBySelectLanguage() => resetBySelectLanguage = false;
 
-        /// <summary>
-        /// 錯誤恢復發生在載入事件緒，重置交由主執行緒執行並等待完成（見 <see cref="SessionLifecycle.RaiseOnMainThread"/>）。
-        /// </summary>
+        // 錯誤恢復發生在載入事件緒，重置交由主執行緒執行並等待完成（見 <see cref="SessionLifecycle.RaiseOnMainThread"/>）。
         public static void Prefix()
         {
             if (resetBySelectLanguage)

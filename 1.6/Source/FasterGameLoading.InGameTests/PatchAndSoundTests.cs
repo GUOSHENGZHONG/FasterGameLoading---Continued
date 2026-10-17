@@ -47,7 +47,7 @@ namespace FasterGameLoading.InGameTests
             FglState.AssertNone(failures, "patch state mismatches");
         }
 
-        /// <summary>音效解析完成後，SoundStarter 類別的攔截必須全部解除，否則整個 session 沒有聲音。</summary>
+        // 音效解析完成後，SoundStarter 類別的攔截必須全部解除，否則整個 session 沒有聲音。
         [Test]
         public static void SoundStarterInterceptionIsRemoved()
         {
@@ -73,7 +73,7 @@ namespace FasterGameLoading.InGameTests
         }
     }
 
-    /// <summary>延遲的 SubSoundDef 解析是否真的全部完成。</summary>
+    // 延遲的 SubSoundDef 解析是否真的全部完成。
     [TestSuite]
     internal static class DeferredSoundTests
     {

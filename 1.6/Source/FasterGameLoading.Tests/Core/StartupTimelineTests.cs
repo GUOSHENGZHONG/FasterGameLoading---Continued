@@ -9,7 +9,7 @@ namespace FasterGameLoading.Tests.Core
 
         private StartupTimeline NewTimeline() => new StartupTimeline(() => now);
 
-        /// <summary>連續兩幀觀察到主選單：第一幀開始於 <paramref name="firstFrame"/>，畫完後的下一幀開始於 <paramref name="nextFrame"/>。</summary>
+        // 連續兩幀觀察到主選單：第一幀開始於 <paramref name="firstFrame"/>，畫完後的下一幀開始於 <paramref name="nextFrame"/>。
         private string ShowMainMenu(StartupTimeline timeline, double firstFrame, double nextFrame)
         {
             now = firstFrame;

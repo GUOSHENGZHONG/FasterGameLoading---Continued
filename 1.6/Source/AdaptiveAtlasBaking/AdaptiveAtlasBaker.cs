@@ -17,19 +17,19 @@ namespace FasterGameLoading
     /// </summary>
     public static class AdaptiveAtlasBaker
     {
-        /// <summary>最近一次自適應烘焙是否失敗；失敗時已產生的圖集都已銷毀，由呼叫端改以原版流程烘焙。</summary>
+        // 最近一次自適應烘焙是否失敗；失敗時已產生的圖集都已銷毀，由呼叫端改以原版流程烘焙。
         internal static bool LastBakeFailed { get; private set; }
 
-        /// <summary>加權移動平均的權重，越新的記錄權重越高；保留的歷史筆數與權重數相同。</summary>
+        // 加權移動平均的權重，越新的記錄權重越高；保留的歷史筆數與權重數相同。
         internal static readonly float[] BakeSpeedWeights = { 0.4f, 0.3f, 0.2f, 0.1f };
 
-        /// <summary>保留的烘焙速度記錄筆數上限。</summary>
+        // 保留的烘焙速度記錄筆數上限。
         internal static int BakeSpeedHistorySize => BakeSpeedWeights.Length;
 
-        /// <summary>歷次靜態圖集烘焙速度（像素／秒，新的在前），跨 session 保存，用於推估下次的起始批次大小。</summary>
+        // 歷次靜態圖集烘焙速度（像素／秒，新的在前），跨 session 保存，用於推估下次的起始批次大小。
         internal static List<float> BakeSpeedHistory { get; set; } = new();
 
-        /// <summary>序列化烘焙速度記錄；由 SessionCache.ExposeData 在每一輪 Scribe 呼叫。</summary>
+        // 序列化烘焙速度記錄；由 SessionCache.ExposeData 在每一輪 Scribe 呼叫。
         internal static void ExposeBakeSpeedHistory()
         {
             var speeds = BakeSpeedHistory;
@@ -48,9 +48,7 @@ namespace FasterGameLoading
             public int AdaptivePixelsPerSlice;
         }
 
-        /// <summary>
-        /// 自適應烘焙的調校常數。整個協程期間不變，故以 in 傳遞避免複製。
-        /// </summary>
+        // 自適應烘焙的調校常數。整個協程期間不變，故以 in 傳遞避免複製。
         [StructLayout(LayoutKind.Auto)]
         private readonly struct AdaptiveBakeTuning
         {
@@ -70,10 +68,8 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>
-        /// 自適應靜態圖集烘焙主協程。
-        /// </summary>
-        /// <param name="delayedActions">延遲動作管理器實例，提供每幀的時間預算。</param>
+        // 自適應靜態圖集烘焙主協程。
+        // 參數 delayedActions：延遲動作管理器實例，提供每幀的時間預算。
         // MA0051（方法過長）與 S3776（認知複雜度）：速度估算、失敗收尾與提交階段
         // 都已抽出（見下方三個方法），剩下的本體是一段以 yield 分段的線性敘事：
         // 逐 group 累積批次、滿一個 slice 就烘焙並讓出一幀。
@@ -217,15 +213,15 @@ namespace FasterGameLoading
             LastBakeFailed = true;
         }
 
-        /// <summary>TakeUnprocessedTextures 跨呼叫保留的進度。</summary>
+        // TakeUnprocessedTextures 跨呼叫保留的進度。
         private sealed class BakeProgress
         {
             public readonly Dictionary<TextureAtlasGroupKey, HashSet<Texture2D>> ProcessedByGroup = new();
 
-            /// <summary>已全部標記為已處理的群組；佇列總數改變（有新插入）時清空，重新掃描所有群組。</summary>
+            // 已全部標記為已處理的群組；佇列總數改變（有新插入）時清空，重新掃描所有群組。
             public readonly HashSet<TextureAtlasGroupKey> FullyScanned = new();
 
-            /// <summary>上次檢查時佇列中的貼圖總數；-1 代表尚未檢查。</summary>
+            // 上次檢查時佇列中的貼圖總數；-1 代表尚未檢查。
             public int QueuedCount = -1;
         }
 
@@ -374,7 +370,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>依本次批次速度調整下一張圖集的目標像素數。</summary>
+        // 依本次批次速度調整下一張圖集的目標像素數。
         private static void UpdateAdaptiveBakeState(
             double secondsElapsed,
             long pixelsInThisSlice,

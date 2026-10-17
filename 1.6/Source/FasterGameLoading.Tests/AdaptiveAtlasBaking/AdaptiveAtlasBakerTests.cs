@@ -479,7 +479,7 @@ namespace FasterGameLoading.Tests.AdaptiveAtlasBaking
             return false;
         }
 
-        /// <summary>排入兩個群組各一張貼圖，烘焙時各烘一張圖集。</summary>
+        // 排入兩個群組各一張貼圖，烘焙時各烘一張圖集。
         private static void QueueTwoSingleTextureGroups()
         {
             var queue = new Dictionary<TextureAtlasGroupKey, (List<Texture2D>, HashSet<Texture2D>)>();
@@ -492,7 +492,7 @@ namespace FasterGameLoading.Tests.AdaptiveAtlasBaking
             BuildQueueField.SetValue(null, queue);
         }
 
-        /// <summary>兩張圖集的烘焙，在指定的預算狀態下跑到第一次讓出幀為止。</summary>
+        // 兩張圖集的烘焙，在指定的預算狀態下跑到第一次讓出幀為止。
         private void RunTwoAtlasBakeUntilFirstYield(bool overBudget, out bool yielded)
         {
             QueueTwoSingleTextureGroups();

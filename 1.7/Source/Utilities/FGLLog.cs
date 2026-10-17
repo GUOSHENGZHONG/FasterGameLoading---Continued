@@ -17,7 +17,7 @@ public static class FGLLog
 {
     private const string Prefix = "[FasterGameLoading] ";
 
-    /// <summary>背景執行緒待寫入的日誌佇列，由主執行緒消耗。</summary>
+    // 背景執行緒待寫入的日誌佇列，由主執行緒消耗。
     private static readonly ConcurrentQueue<(Action<string> writeAction, string text)> pending = new();
 
     public static void Message(string message)

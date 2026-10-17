@@ -3,9 +3,7 @@ using HarmonyLib;
 
 namespace FasterGameLoading
 {
-    /// <summary>
-    /// 讓 FGL 提早內容載入使用 ImageOpt 同步路徑，避免提早啟動原生佇列。
-    /// </summary>
+    // 讓 FGL 提早內容載入使用 ImageOpt 同步路徑，避免提早啟動原生佇列。
     internal static class ImageOptEarlyLoadCoordinator
     {
         private const string TextureLoadPatchTypeName = "ImageOpt.TextureLoadPatch";

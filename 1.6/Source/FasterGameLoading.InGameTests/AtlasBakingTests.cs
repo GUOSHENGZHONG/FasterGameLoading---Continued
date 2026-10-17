@@ -13,7 +13,7 @@ namespace FasterGameLoading.InGameTests
     [TestSuite]
     internal static class AtlasBakingTests
     {
-        /// <summary>本次載入烘焙的圖集；語言重載後排除原版留下的舊圖集（見 <see cref="LanguageReload.AtlasesBeforeReload"/>）。</summary>
+        // 本次載入烘焙的圖集；語言重載後排除原版留下的舊圖集（見 <see cref="LanguageReload.AtlasesBeforeReload"/>）。
         internal static IEnumerable<StaticTextureAtlas> CurrentLoadAtlases
             => GlobalTextureAtlasManager.staticTextureAtlases.Where(static a => TestRunDriver.Round != 2 || !LanguageReload.AtlasesBeforeReload.Contains(a));
 
@@ -30,7 +30,7 @@ namespace FasterGameLoading.InGameTests
             Assert.That(AdaptiveAtlasBaker.LastBakeFailed).Is.False();
         }
 
-        /// <summary>同一張貼圖在同一個 group 出現在兩張圖集，代表烘焙跑了兩次。</summary>
+        // 同一張貼圖在同一個 group 出現在兩張圖集，代表烘焙跑了兩次。
         [Test]
         public static void NoTextureIsBakedTwiceInTheSameGroup()
         {

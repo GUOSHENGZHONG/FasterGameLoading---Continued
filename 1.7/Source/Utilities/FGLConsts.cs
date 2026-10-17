@@ -1,8 +1,6 @@
 ﻿namespace FasterGameLoading;
 
-/// <summary>
-/// FasterGameLoading 內部共用常數。
-/// </summary>
+// FasterGameLoading 內部共用常數。
 public static class FGLConsts
 {
     public const string ModName = "FasterGameLoading";

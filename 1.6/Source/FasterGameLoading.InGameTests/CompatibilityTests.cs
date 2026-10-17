@@ -129,9 +129,7 @@ namespace FasterGameLoading.InGameTests
             }
         }
 
-        /// <summary>
-        /// Ayameduki、WRK（以及無法延後 HAR 變體掃描時的 HAR 與其衍生）在排除名單內，內容只能由原版流程載入。
-        /// </summary>
+        // Ayameduki、WRK（以及無法延後 HAR 變體掃描時的 HAR 與其衍生）在排除名單內，內容只能由原版流程載入。
         [Test]
         public static void SkipListedModsAreNotEarlyLoaded()
         {

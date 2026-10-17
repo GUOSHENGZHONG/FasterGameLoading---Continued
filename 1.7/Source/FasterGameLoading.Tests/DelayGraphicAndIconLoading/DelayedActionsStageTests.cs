@@ -492,7 +492,7 @@ public class DelayedActionsStageTests
     /// </summary>
     private static bool ForceMethodRecompile() => true;
 
-    /// <summary>組出假地圖：只帶入 listerThings 的 def → 東西對照與空 MapDrawer，避免動到遊戲執行期狀態。</summary>
+    // 組出假地圖：只帶入 listerThings 的 def → 東西對照與空 MapDrawer，避免動到遊戲執行期狀態。
     private static Map CreateFakeMap(Dictionary<ThingDef, List<Thing>> thingsByDef)
     {
         var map = (Map)FormatterServices.GetUninitializedObject(typeof(Map));

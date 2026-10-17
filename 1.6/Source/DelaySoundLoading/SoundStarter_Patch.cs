@@ -76,9 +76,7 @@ namespace FasterGameLoading
             unpatched = false;
         }
 
-        /// <summary>
-        /// 取消此類別中所有 Harmony patch，恢復正常聲音播放。
-        /// </summary>
+        // 取消此類別中所有 Harmony patch，恢復正常聲音播放。
         internal static void Unpatch()
         {
             if (unpatched) return;

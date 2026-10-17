@@ -8,15 +8,13 @@ using System.Threading;
 using Verse;
 namespace FasterGameLoading
 {
-    /// <summary>
-    /// 管理降質紋理快取的生命週期與對照表。
-    /// </summary>
+    // 管理降質紋理快取的生命週期與對照表。
     public class TextureCacheManager
     {
-        /// <summary>原始路徑 → 降質快取路徑的對照表（會透過 Scribe 持久化）。</summary>
+        // 原始路徑 → 降質快取路徑的對照表（會透過 Scribe 持久化）。
         internal Dictionary<string, string> resizedTextureCache = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        /// <summary>原始路徑 → 降質快取路徑的對照表（唯讀檢視；寫入請走 SetCacheEntry）。</summary>
+        // 原始路徑 → 降質快取路徑的對照表（唯讀檢視；寫入請走 SetCacheEntry）。
         public IReadOnlyDictionary<string, string> ResizedTextureCache => resizedTextureCache;
         private readonly object cacheLock = new object();
         /// <summary>
@@ -32,10 +30,10 @@ namespace FasterGameLoading
             new ThreadLocal<MD5>(() => MD5.Create());
         private readonly string baseCacheDir;
 
-        /// <summary>紋理快取的根目錄。</summary>
+        // 紋理快取的根目錄。
         public string CacheDirectory => baseCacheDir ?? Path.Combine(GenFilePaths.SaveDataFolderPath, FGLConsts.ModName, FGLConsts.TextureCacheDir);
 
-        /// <summary>與正式快取目錄同層的兄弟目錄（重建用的暫存目錄）。</summary>
+        // 與正式快取目錄同層的兄弟目錄（重建用的暫存目錄）。
         private string BuildSiblingDirectory(string name)
         {
             if (baseCacheDir != null)
@@ -100,7 +98,7 @@ namespace FasterGameLoading
             return originalPath;
         }
 
-        /// <summary>目前快取的紋理數量（執行緒安全）。</summary>
+        // 目前快取的紋理數量（執行緒安全）。
         public int CacheCount
         {
             get
@@ -199,7 +197,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>移除指定原始路徑的快取項目。</summary>
+        // 移除指定原始路徑的快取項目。
         public void RemoveCachedTexturePath(string originalPath)
         {
             lock (cacheLock)
@@ -248,7 +246,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>清除所有紋理快取（檔案 + 記憶體對照表）。會等進行中的背景清理結束，主執行緒呼叫端應放在長事件內。</summary>
+        // 清除所有紋理快取（檔案 + 記憶體對照表）。會等進行中的背景清理結束，主執行緒呼叫端應放在長事件內。
         public void ClearCache()
         {
             lock (maintenanceLock)
@@ -287,13 +285,13 @@ namespace FasterGameLoading
 
             internal Dictionary<string, string> Entries { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
-            /// <summary>原始檔對應的暫存快取檔路徑（檔名與升級後的正式路徑相同）。</summary>
+            // 原始檔對應的暫存快取檔路徑（檔名與升級後的正式路徑相同）。
             public string GetCachePath(string originalPath)
             {
                 return ComputeCachePathFromKey(GetCacheKey(originalPath), StagingDirectory);
             }
 
-            /// <summary>登記一筆已寫入暫存目錄的快取檔。</summary>
+            // 登記一筆已寫入暫存目錄的快取檔。
             public void Add(string originalPath, string cachePath)
             {
                 Entries[originalPath] = cachePath;
@@ -333,7 +331,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>刪除殘留的暫存目錄；升級成功時暫存目錄已被搬走，這裡不做事。</summary>
+        // 刪除殘留的暫存目錄；升級成功時暫存目錄已被搬走，這裡不做事。
         private static void DeleteStagingDirectory(string stagingDirectory)
         {
             try
@@ -349,7 +347,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>將暫存目錄替換為正式快取目錄，並以重新指向正式目錄的新項目取代對照表。</summary>
+        // 將暫存目錄替換為正式快取目錄，並以重新指向正式目錄的新項目取代對照表。
         private bool PromoteStaging(string stagingDirectory, Dictionary<string, string> stagedEntries)
         {
             string backupDirectory = CacheDirectory + "_Backup";
@@ -416,7 +414,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>以讀檔結果取代整份對照表（執行緒安全）；設定檔沒有這份資料時換成空表。</summary>
+        // 以讀檔結果取代整份對照表（執行緒安全）；設定檔沒有這份資料時換成空表。
         internal void ReplaceCacheMap(Dictionary<string, string> cacheMap)
         {
             lock (cacheLock)
@@ -425,7 +423,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>提供向內部字典新增項目的執行緒安全介面。</summary>
+        // 提供向內部字典新增項目的執行緒安全介面。
         public void SetCacheEntry(string originalPath, string cachePath)
         {
             lock (cacheLock)
@@ -434,7 +432,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>以執行緒安全方式回傳快取對照表的快照副本。</summary>
+        // 以執行緒安全方式回傳快取對照表的快照副本。
         // MA0016: 刻意回傳具體的 Dictionary。回傳的是全新的私有副本，
         // 呼叫端修改它不會影響內部狀態；而設定存檔的 Scribe_Collections.Look
         // 只接受 ref Dictionary，改回唯讀介面只會逼出一次多餘的複製。
@@ -448,9 +446,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>
-        /// 清理過期與無效的快取檔案及對照項目。重建或清除進行中時會等它們結束。
-        /// </summary>
+        // 清理過期與無效的快取檔案及對照項目。重建或清除進行中時會等它們結束。
         public void CleanupObsoleteCacheFiles()
         {
             lock (maintenanceLock)
@@ -547,7 +543,7 @@ namespace FasterGameLoading
             return keysToRemove;
         }
 
-        /// <summary>以執行緒安全方式從快取對照表移除指定的鍵。</summary>
+        // 以執行緒安全方式從快取對照表移除指定的鍵。
         private void RemoveCacheEntries(List<string> keysToRemove)
         {
             if (keysToRemove.Count is 0)
@@ -564,7 +560,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>把目前對照表中所有快取檔路徑補進有效路徑集合。</summary>
+        // 把目前對照表中所有快取檔路徑補進有效路徑集合。
         private void CollectValidCacheFilePaths(HashSet<string> validCacheFiles)
         {
             lock (cacheLock)
@@ -576,7 +572,7 @@ namespace FasterGameLoading
             }
         }
 
-        /// <summary>刪除快取目錄中未被對照表引用的檔案，回傳實際刪除數量。</summary>
+        // 刪除快取目錄中未被對照表引用的檔案，回傳實際刪除數量。
         private static int DeleteUnreferencedFiles(string[] files, HashSet<string> validCacheFiles)
         {
             int deleted = 0;
@@ -630,7 +626,7 @@ namespace FasterGameLoading
         /// </summary>
         private static bool SafeFileExists(string path) => File.Exists(path);
 
-        /// <summary>把路徑正規化後加入集合；無法正規化時退回使用原始字串。</summary>
+        // 把路徑正規化後加入集合；無法正規化時退回使用原始字串。
         private static void AddResolvedPath(HashSet<string> set, string path)
         {
             try

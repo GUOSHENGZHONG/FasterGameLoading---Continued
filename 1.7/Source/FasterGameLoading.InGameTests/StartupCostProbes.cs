@@ -38,7 +38,7 @@ namespace FasterGameLoading.InGameTests
 
     internal static class TypeEnumerationCost
     {
-        /// <summary>直接以 Harmony 列舉所有組件的型別一遍（不經 FGL 的快取），回傳毫秒數。</summary>
+        // 直接以 Harmony 列舉所有組件的型別一遍（不經 FGL 的快取），回傳毫秒數。
         public static string Measure()
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();

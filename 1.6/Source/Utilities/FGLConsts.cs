@@ -1,8 +1,6 @@
 ﻿namespace FasterGameLoading
 {
-    /// <summary>
-    /// FasterGameLoading 內部共用常數。
-    /// </summary>
+    // FasterGameLoading 內部共用常數。
     public static class FGLConsts
     {
         public const string ModName = "FasterGameLoading";
@@ -25,7 +23,7 @@
         public const int AccessToolsPreloadDelayMs = 50;
         public const int TexturePreloadDelayMs = 150;
 
-        /// <summary>原始貼圖背景預讀在記憶體中最多暫存的位元組數。</summary>
+        // 原始貼圖背景預讀在記憶體中最多暫存的位元組數。
         public const long TexturePrefetchBudgetBytes = 256L * 1024 * 1024;
     }
 }

@@ -20,9 +20,7 @@ namespace FasterGameLoading.Tests.StaticAtlasOptimizations
             }
         }
 
-        /// <summary>
-        /// 16384 寬的圖集有 6 層 mipmap：每層保留一列空白是原尺寸 32 列，高度以 256 列為單位。
-        /// </summary>
+        // 16384 寬的圖集有 6 層 mipmap：每層保留一列空白是原尺寸 32 列，高度以 256 列為單位。
         [TestCase(4300, 6, 4352)]
         [TestCase(100, 1, 104)]
         [TestCase(123, 1, 128)]
