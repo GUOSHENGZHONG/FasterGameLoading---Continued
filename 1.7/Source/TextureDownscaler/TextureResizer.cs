@@ -138,6 +138,13 @@ public static class TextureResizer
     /// </summary>
     public static byte[] EncodePng(ResizedPixels pixels)
     {
-        return ImageConversion.EncodeArrayToPNG(pixels.Rgba, pixels.Format, (uint)pixels.Width, (uint)pixels.Height);
+        int rowBytes = pixels.Width * 4;
+        var topDownPixels = new byte[pixels.Rgba.Length];
+        for (int y = 0; y < pixels.Height; y++)
+        {
+            Buffer.BlockCopy(pixels.Rgba, y * rowBytes, topDownPixels, (pixels.Height - 1 - y) * rowBytes, rowBytes);
+        }
+
+        return ImageConversion.EncodeArrayToPNG(topDownPixels, pixels.Format, (uint)pixels.Width, (uint)pixels.Height);
     }
 }

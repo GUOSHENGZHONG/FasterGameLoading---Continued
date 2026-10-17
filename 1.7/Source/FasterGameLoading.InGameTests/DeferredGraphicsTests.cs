@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
-using RimTestRedux;
+using DevTools.Testing;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -13,16 +13,18 @@ namespace FasterGameLoading.InGameTests
     /// 延遲圖形／圖示管線跑完後，每個 Def 的視覺狀態要與原版一致。
     /// 預設設定下這些測試驗證原版基準；開啟延遲圖形載入時驗證 FGL 沒有漏載或配錯圖形。
     /// </summary>
-    [TestSuite]
-    internal static class DeferredGraphicsTests
+    [TestFixture(TestType.MainMenu)]
+    internal class DeferredGraphicsTests
     {
+        public DeferredGraphicsTests() { }
+
         [Test]
         public static void DeferredQueuesAreDrained()
         {
             var delayedActions = FasterGameLoadingMod.delayedActions;
-            Assert.That(delayedActions.Phase == DeferredPhase.Completed).Is.True();
-            Assert.That(delayedActions.GraphicsToLoadCount).Is.EqualTo(0);
-            Assert.That(delayedActions.IconsToLoadCount).Is.EqualTo(0);
+            Expect.IsTrue(delayedActions.Phase == DeferredPhase.Completed, "deferred loading pipeline did not complete");
+            Expect.AreEqual(delayedActions.GraphicsToLoadCount, 0, "deferred graphics queue was not drained");
+            Expect.AreEqual(delayedActions.IconsToLoadCount, 0, "deferred icon queue was not drained");
         }
 
         /// <summary>原版 PostLoad 回呼把 graphicData.Graphic 指給 ThingDef.graphic；漏跑的 Def 會停在 BadGraphic。</summary>
@@ -169,7 +171,7 @@ namespace FasterGameLoading.InGameTests
         public static bool CameFromInit(GraphicData data)
             => InitResults.TryGetValue(data, out var graphic) && ReferenceEquals(graphic, data.cachedGraphic);
 
-        [HarmonyPriority(Priority.Last)]
+        [HarmonyPriority(HarmonyLib.Priority.Last)]
         public static void Postfix(GraphicData __instance)
         {
             // ConditionalWeakTable 在 .NET Framework 沒有 AddOrUpdate；重複 Init 時先移除舊值。

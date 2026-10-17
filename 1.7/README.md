@@ -62,7 +62,7 @@ Disabled by default:
 
 Manual tool:
 
-- **Downscale textures**: Shows a loading screen while it downscales high-resolution textures into a separate cache (in successive halving steps to avoid aliasing). Original mod files are never modified, and cached textures use RimWorld's filtering and compression pipeline. Textures under `/UI/` keep mipmaps disabled. Original files are read and the cache PNGs are encoded and written on background threads; only decoding and GPU resizing run on the main thread. When the mod list changes, cache entries for still-active mods are retained. Rebuilding replaces the previous cache only after every new file is in place; if any cache file fails to write, or nothing could be written, the previous cache is kept. If you already use Graphics Settings+ or RimSort Optimize Texture, you usually do not need this. While Graphics Settings+ or Image Opt is loading textures, the tool is unavailable and the button is hidden.
+- **Downscale textures**: Shows a loading screen while it downscales high-resolution textures into a separate cache (in successive halving steps to avoid aliasing). Original mod files are never modified, and cached textures use RimWorld's filtering, mipmap and compression pipeline. Textures under `/UI/` keep mipmaps disabled. Original files are read and the cache PNGs are encoded and written on background threads; only decoding and GPU resizing run on the main thread. Background PNG encoding preserves the same pixel row direction as RimWorld's texture encoder. When the mod list changes, cache entries for still-active mods are retained. Rebuilding replaces the previous cache only after every new file is in place; if any cache file fails to write, or nothing could be written, the previous cache is kept. If you already use Graphics Settings+ or RimSort Optimize Texture, you usually do not need this. While Graphics Settings+ or Image Opt is loading textures, the tool is unavailable and the button is hidden.
 - **Clear texture cache**: Shows a loading screen while it removes cached downscaled textures, so original textures are used on the next startup.
 
 > [!NOTE]
@@ -161,3 +161,5 @@ Tests use NUnit on .NET 10:
 ```bash
 dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj --settings test.runsettings
 ```
+
+In-game integration tests and type-lookup benchmarks use a pinned DevTools build in a separate development-only mod. See the [in-game test guide](Source/FasterGameLoading.InGameTests/README.md) for setup, Test Explorer, Smoke Test, and test scenarios. The player-facing `1.7/Assemblies/` does not require DevTools. The NUnit suite continues to use the `dotnet test` command above. RimWorld 1.6 does not integrate DevTools.

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using DevTools.Testing;
 using HarmonyLib;
-using RimTestRedux;
 using Verse;
 
 namespace FasterGameLoading.InGameTests
@@ -58,11 +58,12 @@ namespace FasterGameLoading.InGameTests
         {
             if (failures.Count == 0)
             {
+                Expect.IsEmpty(failures);
                 return;
             }
             var listed = string.Join("; ", failures.Take(maxListed));
             var more = failures.Count > maxListed ? $" (+{failures.Count - maxListed} more)" : string.Empty;
-            throw new AssertionException($"{failures.Count} {what}: {listed}{more}");
+            Expect.IsEmpty(failures, $"{failures.Count} {what}: {listed}{more}");
         }
     }
 

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
-using RimTestRedux;
+using DevTools.Testing;
 using RimWorld.Planet;
 using Verse;
 using Verse.Sound;
@@ -13,16 +13,18 @@ namespace FasterGameLoading.InGameTests
     /// 進入地圖相關的路徑：World.FinalizeInit 會把尚未解析的 SubSoundDef 全部解析完，
     /// 延遲圖形也必須在第一批物件生成時就緒。需要地圖的測試只在 quicktest 回合執行，主選單回合直接略過。
     /// </summary>
-    [TestSuite]
-    internal static class MapLoadTests
+    [TestFixture(TestType.Playing)]
+    internal class MapLoadTests
     {
+        public MapLoadTests() { }
+
         private static bool Playing => Current.ProgramState == ProgramState.Playing && Find.CurrentMap != null;
 
         [Test]
         public static void WorldFinalizeInitRan()
         {
             if (!FglState.Quicktest) return;
-            Assert.That(WorldFinalizeInitProbe.Calls).Is.GreaterThan(0);
+            Expect.GreaterThan(WorldFinalizeInitProbe.Calls, 0, "World.FinalizeInit was not observed in quicktest");
             Log.Message($"[FGL InGameTests] World.FinalizeInit ran with {WorldFinalizeInitProbe.QueuedSubSoundsAtInit} SubSoundDefs still queued; deferred pipeline finished at that point: {WorldFinalizeInitProbe.PipelineFinishedAtInit}");
         }
 
@@ -41,9 +43,9 @@ namespace FasterGameLoading.InGameTests
                 .SelectMany(static s => s.subSounds)
                 .FirstOrDefault(static s => s.resolvedGrains.Count > 0);
             // 沒有任何已解析的 SubSoundDef 代表延遲音效解析本身壞了（EverySubSoundWithGrainsIsResolved 會列出），這裡明確指出而非拋 LINQ 例外。
-            Assert.That(sub != null).Is.True();
+            Expect.IsNotNull(sub, "no resolved SubSoundDef was available for the World.FinalizeInit path test");
             int expectedGrains = sub.resolvedGrains.Count;
-            Assert.That(delayedActions.SubSoundDefToResolveCount).Is.EqualTo(0);
+            Expect.AreEqual(delayedActions.SubSoundDefToResolveCount, 0, "sub-sound queue was not empty before the path test");
 
             try
             {
@@ -53,15 +55,15 @@ namespace FasterGameLoading.InGameTests
                 FasterGameLoadingMod.harmony.PatchCategory(typeof(FasterGameLoadingMod).Assembly, "SoundStarter");
                 sub.ResolveReferences();
 
-                Assert.That(delayedActions.SubSoundDefToResolveCount).Is.EqualTo(1);
-                Assert.That(sub.resolvedGrains.Count).Is.EqualTo(0);
-                Assert.That(FglState.HasFglPatch(tryPlay)).Is.True();
+                Expect.AreEqual(delayedActions.SubSoundDefToResolveCount, 1, "resolving the SubSoundDef did not queue exactly one deferred action");
+                Expect.AreEqual(sub.resolvedGrains.Count, 0, "SubSoundDef resolved before World.FinalizeInit");
+                Expect.IsTrue(FglState.HasFglPatch(tryPlay), "SoundStarter interception was not applied while sounds were queued");
 
                 World_FinalizeInit_Patch.Postfix();
 
-                Assert.That(delayedActions.SubSoundDefToResolveCount).Is.EqualTo(0);
-                Assert.That(sub.resolvedGrains.Count).Is.EqualTo(expectedGrains);
-                Assert.That(FglState.HasFglPatch(tryPlay)).Is.False();
+                Expect.AreEqual(delayedActions.SubSoundDefToResolveCount, 0, "World.FinalizeInit did not drain the sub-sound queue");
+                Expect.AreEqual(sub.resolvedGrains.Count, expectedGrains, "World.FinalizeInit did not restore the resolved sound grains");
+                Expect.IsFalse(FglState.HasFglPatch(tryPlay), "SoundStarter interception remained after the sub-sound queue drained");
             }
             finally
             {
@@ -76,32 +78,72 @@ namespace FasterGameLoading.InGameTests
         {
             if (!Playing) return;
 
+            var map = Find.CurrentMap;
             var failures = new List<string>();
-            foreach (var thing in Find.CurrentMap.listerThings.AllThings)
+            Thing fixtureThing = null;
+            try
             {
-                // Pawn 由 PawnRenderer 繪製，Graphic 不代表實際外觀。
-                if (thing.def.graphicData == null || thing is Pawn) continue;
-                try
+                if (!map.listerThings.AllThings.Any(static thing => thing.def.graphicData != null && thing is not Pawn))
                 {
-                    var graphic = thing.Graphic;
-                    if (graphic == null || graphic == BaseContent.BadGraphic)
+                    var steelDef = DefDatabase<ThingDef>.GetNamed("Steel");
+                    var spawnCell = IntVec3.Invalid;
+                    foreach (var cell in map.AllCells)
                     {
-                        failures.Add($"{thing.def.defName}: bad graphic");
-                        continue;
+                        if (map.thingGrid.ThingsListAtFast(cell).Count == 0 &&
+                            GenSpawn.CanSpawnAt(steelDef, cell, map, Rot4.North, canWipeEdifices: false))
+                        {
+                            spawnCell = cell;
+                            break;
+                        }
                     }
-                    var texture = graphic.MatSingle?.mainTexture;
-                    if (texture == null || texture == BaseContent.BadTex)
+
+                    if (!spawnCell.IsValid)
                     {
-                        failures.Add($"{thing.def.defName}: missing texture ({graphic.GetType().Name} {graphic.path})");
+                        Expect.IsTrue(false, "map has no graphic-bearing non-pawn Things and no empty cell for the Steel fixture");
+                        return;
+                    }
+
+                    fixtureThing = ThingMaker.MakeThing(steelDef);
+                    if (GenSpawn.Spawn(fixtureThing, spawnCell, map, Rot4.North, WipeMode.Vanish) == null)
+                    {
+                        Expect.IsTrue(false, "failed to spawn the Steel fixture for map graphic validation");
+                        return;
                     }
                 }
-                catch (Exception ex)
+
+                int inspectedThingCount = 0;
+                foreach (var thing in map.listerThings.AllThings)
                 {
-                    failures.Add($"{thing.def.defName}: {ex.GetType().Name} {ex.Message}");
+                    // Pawn 由 PawnRenderer 繪製，Graphic 不代表實際外觀。
+                    if (thing.def.graphicData == null || thing is Pawn) continue;
+                    inspectedThingCount++;
+                    try
+                    {
+                        var graphic = thing.Graphic;
+                        if (graphic == null || graphic == BaseContent.BadGraphic)
+                        {
+                            failures.Add($"{thing.def.defName}: bad graphic");
+                            continue;
+                        }
+                        var texture = graphic.MatSingle?.mainTexture;
+                        if (texture == null || texture == BaseContent.BadTex)
+                        {
+                            failures.Add($"{thing.def.defName}: missing texture ({graphic.GetType().Name} {graphic.path})");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        failures.Add($"{thing.def.defName}: {ex.GetType().Name} {ex.Message}");
+                    }
                 }
+
+                Expect.GreaterThan(inspectedThingCount, 0, "map contains no spawned non-pawn Things with graphic data to inspect");
+                FglState.AssertNone(failures, "spawned things without a usable graphic");
             }
-            Assert.That(Find.CurrentMap.listerThings.AllThings.Count).Is.GreaterThan(0);
-            FglState.AssertNone(failures, "spawned things without a usable graphic");
+            finally
+            {
+                fixtureThing?.Destroy(DestroyMode.Vanish);
+            }
         }
     }
 
@@ -113,7 +155,7 @@ namespace FasterGameLoading.InGameTests
         public static int QueuedSubSoundsAtInit;
         public static bool PipelineFinishedAtInit;
 
-        [HarmonyPriority(Priority.First)]
+        [HarmonyPriority(HarmonyLib.Priority.First)]
         public static void Prefix()
         {
             Calls++;

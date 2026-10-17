@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TestConfig>
+  <failOnWarnings>true</failOnWarnings>
+  <failOnErrors>true</failOnErrors>
+  <warningsAllowed>
+    <!-- 只有模組清單掃描時，來自未啟用模組的這兩種警告可以略過；SmokeLogScopeTests 會再檢查來源與啟用狀態。 -->
+    <li>^Mod (.+?) (?:has a dependency \([^)]+\) with empty display name\.|dependency \([^)]+\) needs to have &lt;downloadUrl&gt; and/or &lt;steamWorkshopUrl&gt; specified\.)$</li>
+  </warningsAllowed>
+</TestConfig>

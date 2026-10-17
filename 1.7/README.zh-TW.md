@@ -62,7 +62,7 @@ graph TD
 
 手動工具：
 
-- **縮小紋理**：顯示載入畫面，把高解析度紋理縮小後存進獨立的快取（分多次減半以避免鋸齒）。原始模組檔案永遠不會被修改，快取的紋理沿用 RimWorld 的過濾與壓縮流程。`/UI/` 下的紋理保持不產生 mipmap。原始檔的讀取，以及快取 PNG 的編碼與寫入都在背景執行緒進行；只有解碼與 GPU 縮放在主執行緒執行。模組清單變更時，仍在使用中的模組的快取項目會保留。重建時要等每個新檔案都就位才取代舊快取；任何快取檔寫入失敗，或完全沒有寫入任何檔案時，保留舊快取。如果已經在用 Graphics Settings+ 或 RimSort Optimize Texture，通常不需要這項工具。由 Graphics Settings+ 或 Image Opt 載入紋理時無法使用此工具，按鈕也會隱藏。
+- **縮小紋理**：顯示載入畫面，把高解析度紋理縮小後存進獨立的快取（分多次減半以避免鋸齒）。原始模組檔案永遠不會被修改，快取的紋理沿用 RimWorld 的過濾、mipmap 與壓縮流程。`/UI/` 下的紋理保持不產生 mipmap。原始檔的讀取，以及快取 PNG 的編碼與寫入都在背景執行緒進行；只有解碼與 GPU 縮放在主執行緒執行。背景編碼的 PNG 會維持與 RimWorld 貼圖編碼相同的像素列方向。模組清單變更時，仍在使用中的模組的快取項目會保留。重建時要等每個新檔案都就位才取代舊快取；任何快取檔寫入失敗，或完全沒有寫入任何檔案時，保留舊快取。如果已經在用 Graphics Settings+ 或 RimSort Optimize Texture，通常不需要這項工具。由 Graphics Settings+ 或 Image Opt 載入紋理時無法使用此工具，按鈕也會隱藏。
 - **清除紋理快取**：顯示載入畫面並移除已快取的縮小紋理，下次啟動改用原始紋理。
 
 > [!NOTE]
@@ -161,3 +161,5 @@ dotnet build 1.7/Source/FasterGameLoading.csproj -c Release
 ```bash
 dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj --settings test.runsettings
 ```
+
+遊戲內整合測試與型別查詢 benchmark 使用固定版本的 DevTools，獨立建置為只供開發的附屬模組；建置方式、Test Explorer／Smoke Test 執行流程及各測試情境見[遊戲內測試說明](Source/FasterGameLoading.InGameTests/README.md)。正式版 `1.7/Assemblies/` 不需要 DevTools，NUnit 測試仍使用上面的 `dotnet test` 指令。RimWorld 1.6 不整合 DevTools。

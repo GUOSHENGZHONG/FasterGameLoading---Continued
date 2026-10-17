@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
-using RimTestRedux;
+using DevTools.Testing;
 using RimWorld;
 using Verse;
 
@@ -12,9 +12,11 @@ namespace FasterGameLoading.InGameTests
     /// 除了 GenTypes.GetTypeInAnyAssemblyInt，FGL 還快取了 AccessTools.AllTypes、AccessTools.TypeByName
     /// 與 GenTypes.AllLeafSubclasses。前兩者以 reverse patch 的原版副本、後者依原版定義重算，在真實的組件組合上比對。
     /// </summary>
-    [TestSuite]
-    internal static class ReflectionCacheTests
+    [TestFixture(TestType.MainMenu)]
+    internal sealed class ReflectionCacheTests
     {
+        public ReflectionCacheTests() { }
+
         /// <summary>常被 mod 用來找延伸點的基底型別，另加上快取中已經算過的所有基底型別。</summary>
         private static readonly Type[] LeafBaseTypes =
         {
@@ -32,14 +34,19 @@ namespace FasterGameLoading.InGameTests
         {
             var fgl = AccessTools.AllTypes().ToList();
             var vanilla = VanillaReflection.AllTypes().ToList();
-            Assert.That(fgl.Count).Is.EqualTo(vanilla.Count);
-            for (int i = 0; i < vanilla.Count; i++)
+            var failures = new List<string>();
+            if (fgl.Count != vanilla.Count)
+            {
+                failures.Add($"Count differs: FGL {fgl.Count}, vanilla {vanilla.Count}");
+            }
+            for (int i = 0; i < Math.Min(fgl.Count, vanilla.Count); i++)
             {
                 if (fgl[i] != vanilla[i])
                 {
-                    throw new AssertionException($"AllTypes differs at index {i}: {fgl[i]?.FullName}, vanilla {vanilla[i]?.FullName}");
+                    failures.Add($"Index {i}: FGL {fgl[i]?.FullName}, vanilla {vanilla[i]?.FullName}");
                 }
             }
+            FglState.AssertNone(failures, "AllTypes results differing from vanilla in order");
         }
 
         /// <summary>快取中每個名稱都必須解析到原版會解析到的型別。</summary>
@@ -64,7 +71,7 @@ namespace FasterGameLoading.InGameTests
                     failures.Add($"{entry.Key}: cached {entry.Value?.FullName}, vanilla {vanilla?.FullName ?? "null"}");
                 }
             }
-            Assert.That(AccessTools_TypeByName_Patch.cachedResults.Count).Is.GreaterThan(0);
+            Expect.GreaterThan(AccessTools_TypeByName_Patch.cachedResults.Count, 0);
             FglState.AssertNone(failures, "cached TypeByName results differing from vanilla");
         }
 
@@ -75,8 +82,8 @@ namespace FasterGameLoading.InGameTests
             if (!FasterGameLoadingSettings.TypeLookupCache) return;
 
             const string missing = "FasterGameLoading.InGameTests.NoSuchType";
-            Assert.That(AccessTools.TypeByName(missing) == null).Is.True();
-            Assert.That(AccessTools_TypeByName_Patch.cachedResults.ContainsKey(missing)).Is.False();
+            Expect.IsNull(AccessTools.TypeByName(missing));
+            Expect.IsFalse(AccessTools_TypeByName_Patch.cachedResults.ContainsKey(missing));
         }
 
         /// <summary>原版 AllSubclasses 以 PLINQ 產生，順序不固定，因此以集合比對。</summary>

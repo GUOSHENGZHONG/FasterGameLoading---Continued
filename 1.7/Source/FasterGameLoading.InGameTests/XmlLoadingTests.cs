@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using HarmonyLib;
-using RimTestRedux;
+using DevTools.Testing;
 using Verse;
 
 namespace FasterGameLoading.InGameTests
@@ -11,9 +11,11 @@ namespace FasterGameLoading.InGameTests
     /// 後面的 Def 合併與 Patch 就會作用在錯的內容上，而且不會有任何錯誤訊息。
     /// 對每個 mod 的 Defs/ 與 Patches/，逐一與原版（reverse patch 的未改寫副本）比對結果。
     /// </summary>
-    [TestSuite]
-    internal static class XmlLoadingTests
+    [TestFixture(TestType.MainMenu)]
+    internal sealed class XmlLoadingTests
     {
+        public XmlLoadingTests() { }
+
         /// <summary>與 ModContentPack.LoadDefs／LoadPatches 傳入的資料夾字串相同。</summary>
         private static readonly string[] Folders = { "Defs/", "Patches/" };
 
@@ -34,7 +36,7 @@ namespace FasterGameLoading.InGameTests
                     Compare(mod, folder, fgl, vanilla, failures);
                 }
             }
-            Assert.That(compared).Is.GreaterThan(0);
+            Expect.GreaterThan(compared, 0);
             FglState.AssertNone(failures, "XML asset lists differing from vanilla");
         }
 

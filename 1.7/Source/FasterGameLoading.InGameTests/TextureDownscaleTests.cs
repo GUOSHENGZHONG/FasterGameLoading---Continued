@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using RimTestRedux;
+using DevTools.Testing;
 using RimWorld.IO;
 using UnityEngine;
 using Verse;
+using Waylith.Utils;
 
 namespace FasterGameLoading.InGameTests
 {
@@ -16,9 +17,11 @@ namespace FasterGameLoading.InGameTests
     /// The resize itself is covered by <see cref="DownscaledTextureKeepsSourceAspectRatio"/>, which makes its
     /// cache through the downscaler's ResizeTexture.
     /// </summary>
-    [TestSuite]
-    internal static class TextureDownscaleTests
+    [TestFixture(TestType.MainMenu)]
+    internal sealed class TextureDownscaleTests
     {
+        public TextureDownscaleTests() { }
+
         private const int OriginalSize = 64;
         private const int CachedSize = 32;
 
@@ -55,6 +58,18 @@ namespace FasterGameLoading.InGameTests
 
         private static bool ExternalTextureToolActive => !TextureOwnership.FglOwnsTextureLoading;
 
+        private static string TextureFixtureRoot => Path.Combine(FasterGameLoadingMod.Instance.Content.RootDir, "FglInGameTests", "Textures");
+
+        private static void DeleteEmptyTextureFixtureDirectories(string directory)
+        {
+            for (int depth = 0; depth < 3 && Directory.Exists(directory); depth++)
+            {
+                if (Directory.GetFileSystemEntries(directory).Length != 0) return;
+                Directory.Delete(directory);
+                directory = Path.GetDirectoryName(directory);
+            }
+        }
+
         /// <summary>
         /// 降質快取載入的貼圖要與原版載入同一張 PNG 的結果一致（格式、濾波、mipmap；壓縮後的濾波設定也以原版為準）。
         /// 唯一刻意的差異：/UI/ 底下的貼圖不產生 mipmap，縮小顯示時才不會糊。
@@ -72,23 +87,23 @@ namespace FasterGameLoading.InGameTests
                 if (ExternalTextureToolActive)
                 {
                     // Graphics Settings+／Image Opt 接手貼圖載入時，FGL 必須完全讓開。
-                    Assert.That(texture.width).Is.EqualTo(OriginalSize);
-                    Assert.That(ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadHits).Is.EqualTo(hitsBefore);
+                    Expect.AreEqual(OriginalSize, texture.width);
+                    Expect.AreEqual(hitsBefore, ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadHits);
                     continue;
                 }
-                Assert.That(ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadHits).Is.EqualTo(hitsBefore + 1);
-                Assert.That(texture.name).Is.EqualTo(Probe.FileNameWithoutExtension);
+                Expect.AreEqual(hitsBefore + 1, ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadHits);
+                Expect.AreEqual(Probe.FileNameWithoutExtension, texture.name);
 
                 var vanilla = probe.LoadCacheFileDirectly();
-                Assert.That(texture.width).Is.EqualTo(vanilla.width);
-                Assert.That(texture.height).Is.EqualTo(vanilla.height);
-                Assert.That(texture.format.ToString()).Is.EqualTo(vanilla.format.ToString());
-                Assert.That(texture.filterMode.ToString()).Is.EqualTo(vanilla.filterMode.ToString());
-                Assert.That(texture.anisoLevel).Is.EqualTo(vanilla.anisoLevel);
-                Assert.That(texture.mipmapCount).Is.EqualTo(isUi ? 1 : vanilla.mipmapCount);
+                Expect.AreEqual(vanilla.width, texture.width);
+                Expect.AreEqual(vanilla.height, texture.height);
+                Expect.AreEqual(vanilla.format.ToString(), texture.format.ToString());
+                Expect.AreEqual(vanilla.filterMode.ToString(), texture.filterMode.ToString());
+                Expect.AreEqual(vanilla.anisoLevel, texture.anisoLevel);
+                Expect.AreEqual(isUi ? 1 : vanilla.mipmapCount, texture.mipmapCount);
 
                 // 同一路徑再載入一次要沿用同一個實體，不能重新讀檔。
-                Assert.That(ReferenceEquals(probe.Load(), texture)).Is.True();
+                Expect.IsTrue(ReferenceEquals(probe.Load(), texture));
             }
         }
 
@@ -104,10 +119,10 @@ namespace FasterGameLoading.InGameTests
 
             var texture = probe.Load();
 
-            Assert.That(texture.width).Is.EqualTo(OriginalSize);
-            Assert.That(FasterGameLoadingMod.Instance.CacheManager.ResizedTextureCache.ContainsKey(probe.OriginalPath)).Is.False();
+            Expect.AreEqual(OriginalSize, texture.width);
+            Expect.IsFalse(FasterGameLoadingMod.Instance.CacheManager.ResizedTextureCache.ContainsKey(probe.OriginalPath));
             // 過期屬正常失效，不是載入失敗。
-            Assert.That(ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadFailures).Is.EqualTo(failuresBefore);
+            Expect.AreEqual(failuresBefore, ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadFailures);
         }
 
         /// <summary>
@@ -176,12 +191,16 @@ namespace FasterGameLoading.InGameTests
                 source.Apply();
 
                 var resized = TextureResizer.ReadResizedPixels(source, Width, Height);
-                var encoded = System.Threading.Tasks.Task.Run(() => TextureResizer.EncodePng(resized)).Result;
+                // 只將原始像素與格式帶到背景緒，避免編譯器產生持有跨組件巢狀 struct 的閉包欄位。
+                var rgba = resized.Rgba;
+                var format = resized.Format;
+                var encoded = System.Threading.Tasks.Task.Run(() =>
+                    TextureResizer.EncodePng(new TextureResizer.ResizedPixels(rgba, format, Width, Height))).Result;
 
                 reference = new Texture2D(Width, Height, TextureFormat.RGBA32, mipChain: false);
                 reference.LoadRawTextureData(resized.Rgba);
                 reference.Apply();
-                Assert.That(Convert.ToBase64String(encoded)).Is.EqualTo(Convert.ToBase64String(reference.EncodeToPNG()));
+                Expect.AreEqual(Convert.ToBase64String(reference.EncodeToPNG()), Convert.ToBase64String(encoded));
             }
             finally
             {
@@ -190,13 +209,16 @@ namespace FasterGameLoading.InGameTests
             }
         }
 
-        /// <summary>在隔離 session 的存檔資料夾產生一組原始貼圖與降質快取，結束時全部清掉。</summary>
+        /// <summary>在目前模組的載入目錄產生暫存原圖與降質快取，結束時清掉。</summary>
         private sealed class Probe : IDisposable
         {
             public const string FileNameWithoutExtension = "FglDownscaleProbe";
 
             private readonly TextureCacheManager cacheManager = FasterGameLoadingMod.Instance.CacheManager;
+            private readonly string directory;
             private readonly string cachePath;
+            private readonly string vanillaReferencePath;
+            private readonly VirtualFile originalFile;
             private Texture2D loaded;
             private Texture2D reference;
 
@@ -204,39 +226,55 @@ namespace FasterGameLoading.InGameTests
 
             public Probe(bool isUi)
             {
-                var directory = Path.Combine(GenFilePaths.SaveDataFolderPath, "FglInGameTests", "Textures", isUi ? "UI" : "Things");
+                directory = Path.Combine(TextureFixtureRoot, isUi ? "UI" : "Things");
                 Directory.CreateDirectory(directory);
-                OriginalPath = Path.Combine(directory, FileNameWithoutExtension + ".png");
+                originalFile = AbstractFilesystem.GetDirectory(directory).GetFile(FileNameWithoutExtension + ".png");
+                OriginalPath = originalFile.FullPath;
                 WritePng(OriginalPath, OriginalSize, OriginalSize);
 
                 cachePath = cacheManager.GetCachePath(OriginalPath);
                 Directory.CreateDirectory(Path.GetDirectoryName(cachePath));
                 WritePng(cachePath, CachedSize, CachedSize);
+                vanillaReferencePath = Path.Combine(directory, FileNameWithoutExtension + "_CacheReference.png");
                 cacheManager.SetCacheEntry(OriginalPath, cachePath);
                 LoadedTextureRegistry.Forget(OriginalPath);
+                LoadedTextureRegistry.Forget(vanillaReferencePath);
             }
 
-            public Texture2D Load() => loaded = LoadTexture(OriginalPath);
+            public Texture2D Load() => loaded = LoadTexture(originalFile);
 
-            /// <summary>對照組：直接載入快取 PNG 本身。它沒有快取項目，FGL 放行，由原版流程載入。</summary>
-            public Texture2D LoadCacheFileDirectly() => reference = LoadTexture(cachePath);
+            /// <summary>對照組：將快取 PNG 複製到已掛載的模組目錄，再由原版流程載入。</summary>
+            public Texture2D LoadCacheFileDirectly()
+            {
+                File.Copy(cachePath, vanillaReferencePath, overwrite: true);
+                ResourceFiles.ForgetListings();
+                return reference = LoadTexture(vanillaReferencePath);
+            }
 
             public void Dispose()
             {
                 cacheManager.RemoveCachedTexturePath(OriginalPath);
                 LoadedTextureRegistry.Forget(OriginalPath);
                 LoadedTextureRegistry.Forget(cachePath);
+                LoadedTextureRegistry.Forget(vanillaReferencePath);
                 if (loaded != null) UnityEngine.Object.Destroy(loaded);
                 if (reference != null) UnityEngine.Object.Destroy(reference);
                 File.Delete(OriginalPath);
+                File.Delete(vanillaReferencePath);
                 File.Delete(cachePath);
+                DeleteEmptyTextureFixtureDirectories(directory);
             }
 
             internal static Texture2D LoadTexture(string path)
             {
                 var file = AbstractFilesystem.GetDirectory(Path.GetDirectoryName(path)).GetFile(Path.GetFileName(path));
+                return LoadTexture(file);
+            }
+
+            internal static Texture2D LoadTexture(VirtualFile file)
+            {
                 var texture = ModContentLoader<Texture2D>.LoadTexture(file);
-                if (texture == null) throw new AssertionException($"LoadTexture returned null for {path}");
+                if (texture == null) throw new InvalidOperationException($"LoadTexture returned null for {file.FullPath}");
                 return texture;
             }
 
@@ -250,6 +288,8 @@ namespace FasterGameLoading.InGameTests
                     texture.SetPixels32(pixels);
                     texture.Apply();
                     File.WriteAllBytes(path, texture.EncodeToPNG());
+                    // RimWorld 1.7 會快取目錄清單；剛建立的測試 PNG 必須重新列入。
+                    ResourceFiles.ForgetListings();
                 }
                 finally
                 {
@@ -266,7 +306,9 @@ namespace FasterGameLoading.InGameTests
         private sealed class ResizeProbe : IDisposable
         {
             private readonly TextureCacheManager cacheManager = FasterGameLoadingMod.Instance.CacheManager;
+            private readonly string directory;
             private readonly string originalPath;
+            private readonly VirtualFile originalFile;
             private readonly int width;
             private readonly int height;
             private Texture2D loaded;
@@ -275,9 +317,10 @@ namespace FasterGameLoading.InGameTests
             {
                 this.width = width;
                 this.height = height;
-                var directory = Path.Combine(GenFilePaths.SaveDataFolderPath, "FglInGameTests", "Textures", "Things");
+                directory = Path.Combine(TextureFixtureRoot, "Things");
                 Directory.CreateDirectory(directory);
-                originalPath = Path.Combine(directory, FormattableString.Invariant($"FglResizeProbe_{width}x{height}.png"));
+                originalFile = AbstractFilesystem.GetDirectory(directory).GetFile(FormattableString.Invariant($"FglResizeProbe_{width}x{height}.png"));
+                originalPath = originalFile.FullPath;
                 Probe.WritePng(originalPath, width, height);
                 Directory.CreateDirectory(Path.GetDirectoryName(cacheManager.GetCachePath(originalPath)));
                 LoadedTextureRegistry.Forget(originalPath);
@@ -306,7 +349,7 @@ namespace FasterGameLoading.InGameTests
                 }
             }
 
-            public Texture2D Load() => loaded = Probe.LoadTexture(originalPath);
+            public Texture2D Load() => loaded = Probe.LoadTexture(originalFile);
 
             public void Dispose()
             {
@@ -319,6 +362,7 @@ namespace FasterGameLoading.InGameTests
                 if (loaded != null) UnityEngine.Object.Destroy(loaded);
                 File.Delete(originalPath);
                 File.Delete(cachePath);
+                DeleteEmptyTextureFixtureDirectories(directory);
             }
         }
     }

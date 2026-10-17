@@ -3,27 +3,19 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using HarmonyLib;
-using RimTestRedux;
-using RimTestRedux.Testing;
 using Verse;
 
 namespace FasterGameLoading.InGameTests
 {
     /// <summary>
-    /// 遊戲內測試的進入點。
-    /// RimTest Redux 內建的「啟動時執行」在 PlayData 載入完成的那一幀就跑測試，
-    /// 但 FGL 的延遲圖形、圖示、圖集與音效協程要之後才逐幀跑完；此時測試會量到半成品狀態。
-    /// 因此關掉內建的啟動執行，改由 <see cref="TestRunDriver"/> 等延遲管線跑完後再觸發；
-    /// 主選單模式另有語言重載後的第 2 輪，quicktest 模式則等地圖進入遊戲（輪次說明見 TestRunDriver）。
+    /// 開發測試附屬模組的進入點。DevTools 負責探索及執行 fixture；
+    /// 本模組在 FGL 建構前安裝探針，並由 <see cref="TestRunDriver"/> 回報延遲管線完成時機。
     /// </summary>
     public sealed class InGameTestsMod : Mod
     {
         public InGameTestsMod(ModContentPack content) : base(content)
         {
             ApplySeededFglSettings(content);
-            // 只改記憶體中的值、不寫回設定檔；本 mod 排在 RimTest Redux 之後載入，其設定此時已建立。
-            RimTestReduxMod.Settings.RunAtStartup = false;
-            RimTestReduxMod.Settings.RunOwnTests = false;
             new Harmony(content.PackageId).PatchAll(typeof(InGameTestsMod).Assembly);
         }
 
@@ -42,14 +34,16 @@ namespace FasterGameLoading.InGameTests
                 Log.Error("[FGL InGameTests] Seeded FGL settings found but Taranchuk.FasterGameLoading is not running; settings not applied.");
                 return;
             }
+            // CLI 開發測試可能暫時把兩個組件放在同一個 mod；此時來源就是 FGL 自己的設定檔。
+            if (ReferenceEquals(fgl, content)) return;
             File.Copy(seeded, LoadedModManager.GetSettingsFilename(fgl.FolderName, nameof(FasterGameLoadingMod)), overwrite: true);
             Log.Message($"[FGL InGameTests] Applied seeded FGL settings from {Path.GetFileName(seeded)}");
         }
     }
 
     /// <summary>
-    /// 測試輪次：第 1 輪在初次載入完成後執行；主選單模式下接著切換語言觸發完整重載（見 <see cref="LanguageReload"/>），
-    /// 重載完成後以同一批測試再跑第 2 輪。quicktest 模式改為等地圖進入遊戲後只跑一輪（遊戲中無法切換語言）。
+    /// 追蹤 DevTools 測試可執行的時機。第 1 輪為初次載入；若從主選單切換語言，
+    /// 第 2 輪為重載後。quicktest 只在進入地圖後就緒。
     /// </summary>
     [HarmonyPatch(typeof(Root), nameof(Root.Update))]
     internal static class TestRunDriver
@@ -60,12 +54,26 @@ namespace FasterGameLoading.InGameTests
         /// <summary>目前等待中（或正在執行）的輪次，從 1 開始。</summary>
         public static int Round { get; private set; } = 1;
 
-        private static bool finished;
+        public static bool Ready { get; private set; }
         private static Stopwatch waitingSince;
+
+        public static void BeginReloadRound()
+        {
+            Round = 2;
+            Ready = false;
+            waitingSince = null;
+        }
+
+        public static void CancelReloadRound()
+        {
+            Round = 1;
+            Ready = true;
+            waitingSince = null;
+        }
 
         public static void Postfix()
         {
-            if (finished || !ReadyForRound())
+            if (Ready || !ReadyForRound())
             {
                 return;
             }
@@ -79,23 +87,13 @@ namespace FasterGameLoading.InGameTests
 
             if (timedOut)
             {
-                Log.Error($"[FGL InGameTests] Round {Round}: timed out after {TimeoutSeconds}s waiting for FGL's deferred pipeline; running tests anyway.");
+                Log.Error($"[FGL InGameTests] Round {Round}: timed out after {TimeoutSeconds}s waiting for FGL's deferred pipeline.");
             }
-            Log.Message($"[FGL InGameTests] Round {Round}: running suites after {waitingSince.Elapsed.TotalSeconds:F1}s wait. Language: {LanguageDatabase.activeLanguage?.folderName}, quicktest: {FglState.Quicktest}. Settings: {FglState.SettingsProfile}");
+            Log.Message($"[FGL InGameTests] Round {Round}: ready for DevTools tests after {waitingSince.Elapsed.TotalSeconds:F1}s wait. Language: {LanguageDatabase.activeLanguage?.folderName}, quicktest: {FglState.Quicktest}. Settings: {FglState.SettingsProfile}");
             // 比較不同版本的啟動速度用：自遊戲啟動起算的秒數，減掉上面的等待即為 PlayData 載入完成的時間點。
             Log.Message($"[FGL InGameTests] Round {Round} timing: realtimeSinceStartup={UnityEngine.Time.realtimeSinceStartup:F1}s, gcCollections={GC.CollectionCount(0)}, {MainThreadFileReadProbe.Summary}, {TypeEnumerationCost.Measure()}");
-            Runner.RunAllRegisteredTests();
-            StatusExplorer.UpdateAllStatusCounts();
-            Viewer.LogTestsResults();
             waitingSince = null;
-
-            if (Round == 1 && LanguageReload.TryStart())
-            {
-                Round = 2;
-                return;
-            }
-            finished = true;
-            Log.Message("[FGL InGameTests] All rounds finished.");
+            Ready = true;
         }
 
         private static bool ReadyForRound()

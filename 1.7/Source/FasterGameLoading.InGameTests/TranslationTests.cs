@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using RimTestRedux;
+using DevTools.Testing;
 using Verse;
 
 namespace FasterGameLoading.InGameTests
@@ -10,9 +10,11 @@ namespace FasterGameLoading.InGameTests
     /// 目前語言沒有對應資料夾時不注入，由原版 Translate() 逐一退回預設語言。
     /// 第 1 輪（英文）走直接對應，第 2 輪切換到沒有 FGL 翻譯的語言，走原版英文退回。
     /// </summary>
-    [TestSuite]
-    internal static class TranslationTests
+    [TestFixture(TestType.MainMenu)]
+    internal sealed class TranslationTests
     {
+        public TranslationTests() { }
+
         [Test]
         public static void FglKeyedStringsAreInjectedForDefaultLanguage()
         {
@@ -54,7 +56,8 @@ namespace FasterGameLoading.InGameTests
         private static void AssertInjected(LoadedLanguage language)
         {
             var keyedDir = KeyedDirectory(language);
-            Assert.That(keyedDir != null).Is.True();
+            Expect.IsNotNull(keyedDir);
+            if (keyedDir == null) return;
 
             var failures = new List<string>();
             int injectedFromFgl = 0;
@@ -75,7 +78,7 @@ namespace FasterGameLoading.InGameTests
                 }
             }
             FglState.AssertNone(failures, $"FGL keyed strings not injected for {language.folderName}");
-            Assert.That(injectedFromFgl).Is.GreaterThan(0);
+            Expect.GreaterThan(injectedFromFgl, 0);
         }
 
         private static IEnumerable<DirectXmlLoaderSimple.XmlKeyValuePair> ReadKeyed(string keyedDir)

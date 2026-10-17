@@ -1,18 +1,20 @@
 using System.Collections.Generic;
 using System.Linq;
-using RimTestRedux;
+using DevTools.Testing;
 using UnityEngine;
 using Verse;
 
 namespace FasterGameLoading.InGameTests
 {
     /// <summary>
-    /// 靜態圖集烘焙的最終狀態：不重複烘焙（重複會多吃一份 VRAM）、佇列中的貼圖都有進圖集、
-    /// 原版 1.6 的 pre-insert 貼圖沒有遺失。三條烘焙路徑（原版啟動時、延遲後原版、延遲後自適應）都適用。
+    /// 驗證靜態圖集烘焙後，同一群組中的貼圖沒有重複烘焙、仍留在建置佇列中的貼圖位於正確圖集，
+    /// 並確認原版預先插入的貼圖沒有遺失。
     /// </summary>
-    [TestSuite]
-    internal static class AtlasBakingTests
+    [TestFixture(TestType.MainMenu)]
+    internal class AtlasBakingTests
     {
+        public AtlasBakingTests() { }
+
         /// <summary>本次載入烘焙的圖集；語言重載後排除原版留下的舊圖集（見 <see cref="LanguageReload.AtlasesBeforeReload"/>）。</summary>
         internal static IEnumerable<StaticTextureAtlas> CurrentLoadAtlases
             => GlobalTextureAtlasManager.staticTextureAtlases.Where(static a => TestRunDriver.Round != 2 || !LanguageReload.AtlasesBeforeReload.Contains(a));
@@ -20,14 +22,7 @@ namespace FasterGameLoading.InGameTests
         [Test]
         public static void StaticAtlasesWereBaked()
         {
-            Assert.ThatCollection(CurrentLoadAtlases.ToList()).Is.Not.Empty();
-        }
-
-        [Test]
-        public static void AdaptiveBakeDidNotFallBack()
-        {
-            // 自適應烘焙沒啟用時不會執行，此值恆為 false。
-            Assert.That(AdaptiveAtlasBaker.LastBakeFailed).Is.False();
+            Expect.IsNotEmpty(CurrentLoadAtlases, "static atlas baking produced no atlases");
         }
 
         /// <summary>同一張貼圖在同一個 group 出現在兩張圖集，代表烘焙跑了兩次。</summary>
@@ -72,7 +67,7 @@ namespace FasterGameLoading.InGameTests
         }
 
         /// <summary>
-        /// 原版烘焙不清空 buildQueue，自適應烘焙提交後會清空；兩種情況下仍留在佇列裡的貼圖都必須已在同 group 的圖集中。
+        /// 原版烘焙後仍留在 buildQueue 裡的貼圖，都必須已在相同 group 的圖集中。
         /// 原版打包失敗時會清空該圖集的貼圖（留下空圖集），這屬於原版行為，該 group 不列入檢查。
         /// </summary>
         [Test]
@@ -99,8 +94,8 @@ namespace FasterGameLoading.InGameTests
         }
 
         /// <summary>
-        /// RimWorld 1.6 的 BakeStaticAtlases 會先插入建築損傷刮痕與搬運箱貼圖；
-        /// 自適應烘焙繞過原版方法，必須自行補插，否則這些貼圖會各自成為獨立的 draw call。
+        /// RimWorld 1.7 的原版 BakeStaticAtlases 會先插入建築損傷刮痕與 MinifiedThing 貼圖；
+        /// 確認這些原版預插入的貼圖仍在各自的圖集群組中。
         /// </summary>
         [Test]
         public static void VanillaPreInsertedTexturesAreAtlased()

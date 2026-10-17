@@ -3,7 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using HarmonyLib;
-using RimTestRedux;
+using DevTools.Testing;
 using UnityEngine;
 using Verse;
 
@@ -13,9 +13,11 @@ namespace FasterGameLoading.InGameTests
     /// 相容性分支只在對應 mod 啟用時才會走到；這些測試在 mod 未啟用時直接略過，
     /// 需以 companion_mods 帶入 HugsLib、Humanoid Alien Races、Ancot Library、ChezhouLib 等另跑一輪（見 README）。
     /// </summary>
-    [TestSuite]
-    internal static class CompatibilityTests
+    [TestFixture(TestType.MainMenu)]
+    internal class CompatibilityTests
     {
+        public CompatibilityTests() { }
+
         /// <summary>
         /// 開啟延遲圖形時，FGL 把 HugsLib 的 OnDefsLoaded 改到主執行緒、等長事件結束後才執行；
         /// 它仍必須執行（HugsLib 子 mod 的 DefsLoaded 靠它），而且只能在主執行緒。
@@ -27,15 +29,15 @@ namespace FasterGameLoading.InGameTests
 
             if (FasterGameLoadingSettings.DelayGraphicLoading)
             {
-                Assert.That(FglState.HasFglPatch(RedirectHugslibToMainThread.targetMethod)).Is.True();
+                Expect.IsTrue(FglState.HasFglPatch(RedirectHugslibToMainThread.targetMethod), "HugsLib OnDefsLoaded redirect patch was not applied");
             }
             lock (HugsLibDefsLoadedProbe.OffMainThreadCalls)
             {
                 Log.Message($"[FGL InGameTests] HugsLib OnDefsLoaded ran {HugsLibDefsLoadedProbe.Calls} time(s), {HugsLibDefsLoadedProbe.OffMainThreadCalls.Count} off the main thread.");
-                Assert.That(HugsLibDefsLoadedProbe.Calls).Is.GreaterThan(0);
+                Expect.GreaterThan(HugsLibDefsLoadedProbe.Calls, 0, "HugsLib OnDefsLoaded was never called");
                 if (FasterGameLoadingSettings.DelayGraphicLoading)
                 {
-                    Assert.That(HugsLibDefsLoadedProbe.OffMainThreadCalls.Count).Is.EqualTo(0);
+                    Expect.AreEqual(HugsLibDefsLoadedProbe.OffMainThreadCalls.Count, 0, "HugsLib OnDefsLoaded ran off the main thread");
                 }
             }
         }
@@ -49,9 +51,9 @@ namespace FasterGameLoading.InGameTests
         {
             if (!HarGraphicsHookProbe.HarActive) return;
 
-            Assert.That(FglState.HasFglPatch(AlienRaceGraphicsHookGate.TargetMethod())).Is.True();
+            Expect.IsTrue(FglState.HasFglPatch(AlienRaceGraphicsHookGate.TargetMethod()), "HAR graphics hook gate patch was not applied");
             var har = LoadedModManager.RunningMods.First(static m => ModDependencyReflection.IsAlienRaces(m.PackageIdPlayerFacing));
-            Assert.That(ProtectedMods.ShouldSkipEarlyLoad(har)).Is.False();
+            Expect.IsFalse(ProtectedMods.ShouldSkipEarlyLoad(har), "HAR should not be excluded from early loading");
 
             List<string> missing;
             lock (HarGraphicsHookProbe.ModsMissingAtRun)
@@ -66,7 +68,7 @@ namespace FasterGameLoading.InGameTests
                 }
                 Log.Message($"[FGL InGameTests] HAR LoadGraphicsHook counted variants {runs} time(s) this round; HAR content loaded early: {harLoadedEarly}.");
                 // 語言重載後 HAR 的 Mod.Content 仍是舊的容器，原版 HAR 不會再計算變體，只在初次載入要求一定執行過。
-                if (round == 1) Assert.That(runs).Is.GreaterThan(0);
+                if (round == 1) Expect.GreaterThan(runs, 0, "HAR graphics hook did not count variants during initial load");
             }
             FglState.AssertNone(missing, "mods whose content was not loaded when HAR counted graphic variants");
         }
@@ -90,7 +92,7 @@ namespace FasterGameLoading.InGameTests
             Log.Message($"[FGL InGameTests] ReloadAll prefixes in run order: {string.Join(", ", owners)}.");
 
             var fglIndex = owners.IndexOf(FglState.HarmonyId);
-            Assert.That(fglIndex >= 0 && fglIndex < owners.IndexOf(ChezhouLibHarmonyId)).Is.True();
+            Expect.IsTrue(fglIndex >= 0 && fglIndex < owners.IndexOf(ChezhouLibHarmonyId), "FGL ReloadAll guard must run before ChezhouLib");
         }
 
         /// <summary>
@@ -108,20 +110,20 @@ namespace FasterGameLoading.InGameTests
             var deferred = FglState.HasFglPatch(AccessTools.Constructor(hyperdrive, new[] { typeof(ModContentPack) }));
             Log.Message($"[FGL InGameTests] Hyperdrive: LoadModXML prefixes = {string.Join(", ", owners)}; FGL gate {(deferred ? "deferred until after Hyperdrive's constructor" : "applied immediately")}.");
 
-            Assert.That(owners.Contains(HyperdriveCompat.PackageId)).Is.True();
-            Assert.That(owners.FirstOrDefault()).Is.EqualTo(FglState.HarmonyId);
+            Expect.IsTrue(owners.Contains(HyperdriveCompat.PackageId), "Hyperdrive LoadModXML prefix is missing");
+            Expect.AreEqual(owners.FirstOrDefault(), FglState.HarmonyId, "FGL LoadModXML gate is not first");
 
             // 讓出 Defs/ 只在 LoadModXML 期間生效；這裡以實際的 patch 狀態重跑一次偵測，確認 Hyperdrive 會被認出來。
             HyperdriveCompat.OnLoadModXMLStarting();
             try
             {
-                Assert.That(HyperdriveCompat.ParallelizesModDefs).Is.True();
+                Expect.IsTrue(HyperdriveCompat.ParallelizesModDefs, "Hyperdrive parallel Def loading was not detected");
 
                 if (!FasterGameLoadingSettings.EnableMultiThreading) return;
                 var mod = LoadedModManager.RunningMods.First(static m => !ProtectedMods.ShouldSkipEarlyLoad(m));
                 LoadableXmlAsset[] result = null;
-                Assert.That(DirectXmlLoader_XmlAssetsInModFolder_Patch.Prefix(ref result, mod, "Defs/", null)).Is.True();
-                Assert.That(DirectXmlLoader_XmlAssetsInModFolder_Patch.Prefix(ref result, mod, "Patches/", null)).Is.False();
+                Expect.IsTrue(DirectXmlLoader_XmlAssetsInModFolder_Patch.Prefix(ref result, mod, "Defs/", null), "FGL should yield Defs/ loading to Hyperdrive");
+                Expect.IsFalse(DirectXmlLoader_XmlAssetsInModFolder_Patch.Prefix(ref result, mod, "Patches/", null), "FGL should keep parallel Patches/ loading enabled");
             }
             finally
             {

@@ -209,6 +209,7 @@ public static class ModContentLoaderTexture2D_LoadTexture_Patch
             {
                 if (tex.LoadImage(data) && tex.width > 0 && tex.height > 0)
                 {
+                    if (useMipmaps) tex = EnsureMipmaps(tex);
                     tex = FinishLoadingLikeVanilla(tex, data, useMipmaps);
                     tex.name = Path.GetFileNameWithoutExtension(fullPath);
                     LoadedTextureRegistry.Record(fullPath, tex);
@@ -238,6 +239,25 @@ public static class ModContentLoaderTexture2D_LoadTexture_Patch
         FasterGameLoadingMod.Instance.CacheManager.RemoveCachedTexturePath(fullPath);
         Interlocked.Increment(ref cacheLoadFailures);
         return false;
+    }
+
+    private static Texture2D EnsureMipmaps(Texture2D texture)
+    {
+        if (texture.mipmapCount is not 1) return texture;
+
+        // 1.7 的 LoadImage 會以解碼結果取代建構時的 mipmap 鏈；從檔案載入則有完整鏈。
+        var mipmapped = new Texture2D(texture.width, texture.height, TextureFormat.RGBA32, mipChain: true);
+        try
+        {
+            mipmapped.SetPixels32(texture.GetPixels32());
+        }
+        catch
+        {
+            UnityEngine.Object.Destroy(mipmapped);
+            throw;
+        }
+        UnityEngine.Object.Destroy(texture);
+        return mipmapped;
     }
 
     /// <summary>

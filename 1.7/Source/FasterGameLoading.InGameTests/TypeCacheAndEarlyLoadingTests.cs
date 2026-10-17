@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
-using RimTestRedux;
-using RimWorld.IO;
+using DevTools.Testing;
 using Verse;
 
 namespace FasterGameLoading.InGameTests
@@ -12,9 +11,11 @@ namespace FasterGameLoading.InGameTests
     /// 型別快取的每個結果都要與原版（未套用 patch 的）GetTypeInAnyAssemblyInt 相同。
     /// 以 Harmony reverse patch 取得原始 IL 的副本當作對照組，在真實的 mod 組件組合上比對。
     /// </summary>
-    [TestSuite]
-    internal static class TypeLookupCacheTests
+    [TestFixture(TestType.MainMenu)]
+    internal sealed class TypeLookupCacheTests
     {
+        public TypeLookupCacheTests() { }
+
         private const int WarmupSampleSize = 500;
 
         [Test]
@@ -103,10 +104,9 @@ namespace FasterGameLoading.InGameTests
 
             var resolved = GenTypes.GetTypeInAnyAssemblyInt(typeName, null);
 
-            // Assert.That 只接受 IComparable，Type 改以布林比對。
-            Assert.That(resolved != null).Is.True();
-            Assert.That(resolved == VanillaLookup.GetTypeInAnyAssemblyInt(typeName, null)).Is.True();
-            Assert.That(TypeLookupCache.FullNamesFromLastSession.ContainsKey(key)).Is.False();
+            Expect.IsNotNull(resolved);
+            Expect.AreEqual(VanillaLookup.GetTypeInAnyAssemblyInt(typeName, null), resolved);
+            Expect.IsFalse(TypeLookupCache.FullNamesFromLastSession.ContainsKey(key));
         }
 
         private static bool IsPlainFullNameEntry(string key, Type type)
@@ -161,7 +161,7 @@ namespace FasterGameLoading.InGameTests
         /// <summary>由 FGL 提早載入的 mod，供相容性測試確認排除名單內的 mod 沒被提早載入。</summary>
         public static readonly List<ModContentPack> EarlyLoadedMods = new List<ModContentPack>();
 
-        [HarmonyPriority(Priority.First)]
+        [HarmonyPriority(HarmonyLib.Priority.First)]
         public static void Prefix(ModContentPack __instance, bool hotReload)
         {
             // 已載入的 mod 會被 FGL 的 prefix 略過，不算一次實際載入。
@@ -250,13 +250,15 @@ namespace FasterGameLoading.InGameTests
     }
 
     /// <summary>提早載入與重複載入防護的最終狀態。</summary>
-    [TestSuite]
-    internal static class EarlyLoadingTests
+    [TestFixture(TestType.MainMenu)]
+    internal sealed class EarlyLoadingTests
     {
+        public EarlyLoadingTests() { }
+
         [Test]
         public static void EarlyLoadingCompleted()
         {
-            Assert.That(FasterGameLoadingMod.delayedActions.earlyLoadingComplete).Is.True();
+            Expect.IsTrue(FasterGameLoadingMod.delayedActions.earlyLoadingComplete);
         }
 
         /// <summary>每個執行中的 mod 都要經過（提早或原版的）ReloadContentInt，漏掉的 mod 沒有貼圖與音效。</summary>
@@ -280,7 +282,7 @@ namespace FasterGameLoading.InGameTests
             List<string> failures;
             lock (ContentLoadProbe.LoadedBeforePatches)
             {
-                Assert.That(ContentLoadProbe.Loads).Is.GreaterThan(0);
+                Expect.GreaterThan(ContentLoadProbe.Loads, 0);
                 failures = ContentLoadProbe.LoadedBeforePatches.ToList();
             }
             FglState.AssertNone(failures, "mod contents loaded before FGL's patches were applied");
@@ -298,11 +300,11 @@ namespace FasterGameLoading.InGameTests
                 .Where(static p => string.Equals(p.owner, FglState.HarmonyId, StringComparison.Ordinal))
                 .Select(static p => p.priority)
                 .ToList() ?? new List<int>();
-            Assert.That(priorities.Count).Is.EqualTo(1);
-            Assert.That(priorities.FirstOrDefault()).Is.EqualTo(Priority.First);
-            Assert.That(FglState.LoadModXMLPrefixOwnersInRunOrder().FirstOrDefault()).Is.EqualTo(FglState.HarmonyId);
+            Expect.AreEqual(1, priorities.Count);
+            Expect.AreEqual(HarmonyLib.Priority.First, priorities.FirstOrDefault());
+            Expect.AreEqual(FglState.HarmonyId, FglState.LoadModXMLPrefixOwnersInRunOrder().FirstOrDefault());
             // 讓出 Defs/ 只限 LoadModXML 期間：載入完成後必須已由 LoadModXML 的 finalizer 歸零，不影響之後的呼叫。
-            Assert.That(HyperdriveCompat.ParallelizesModDefs).Is.False();
+            Expect.IsFalse(HyperdriveCompat.ParallelizesModDefs);
         }
 
         /// <summary>提早載入延到所有 Mod 建構子之後才開始，但仍須在原版載入前實際載入內容，否則加速效果消失。</summary>
@@ -312,31 +314,10 @@ namespace FasterGameLoading.InGameTests
             if (!FasterGameLoadingSettings.earlyModContentLoading) return;
             lock (ContentLoadProbe.LoadedBeforePatches)
             {
-                Assert.That(ContentLoadProbe.EarlyLoads).Is.GreaterThan(0);
+                Expect.GreaterThan(ContentLoadProbe.EarlyLoads, 0);
             }
         }
 
-        /// <summary>
-        /// 背景預讀的原始貼圖要真的被主執行緒取用：執行中的 mod 有 PNG／JPG 貼圖時命中數必須大於 0。
-        /// 預讀只在初次載入執行（語言重載時不再啟動），兩輪看到的都是初次載入的統計；log 記錄命中、自行讀檔與淘汰的數量。
-        /// </summary>
-        [Test]
-        public static void TexturePrefetchServesTexturesFromMemory()
-        {
-            if (!TexturePrefetcher.ShouldRun) return;
-
-            Assert.That(FglState.HasFglPatch(AccessTools.Method(typeof(FilesystemFile), nameof(FilesystemFile.ReadAllBytes)))).Is.True();
-            var run = TexturePrefetcher.LastRun;
-            Assert.That(run != null).Is.True();
-            // 有降質快取的貼圖改讀快取檔，預讀刻意略過，不算在應預讀的數量內。
-            var downscaled = FasterGameLoadingMod.Instance.CacheManager.GetResizedTextureCacheCopy();
-            int textureFiles = LoadedModManager.RunningMods.Sum(m => TexturePrefetcher.TextureFilesInLoadOrder(m).Count(f => !downscaled.ContainsKey(f.FullName)));
-            Log.Message($"[FGL InGameTests] Texture prefetch: {run.Hits} hits ({run.HitBytes} bytes), {run.Misses} read on demand, {run.Evicted} evicted; {textureFiles} PNG/JPG textures in running mods.");
-            if (textureFiles > 0)
-            {
-                Assert.That(run.Hits).Is.GreaterThan(0);
-            }
-        }
 
         /// <summary>
         /// 每個 handler 都要經過 FGL 的 ReloadAll 防重複機制；重複呼叫 ReloadAll 會讓原版記下「Could not load asset bundle」。

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using HarmonyLib;
-using RimTestRedux;
+using DevTools.Testing;
 using UnityEngine;
 using Verse;
 
@@ -20,9 +20,11 @@ namespace FasterGameLoading.InGameTests
     /// apply (vanilla at startup, vanilla after delayed loading, adaptive after delayed loading); an adaptive atlas that
     /// holds a single texture reuses that texture as it is and does not count as baked.
     /// </summary>
-    [TestSuite]
-    internal static class StaticAtlasOptimizationTests
+    [TestFixture(TestType.Playing)]
+    internal sealed class StaticAtlasOptimizationTests
     {
+        public StaticAtlasOptimizationTests() { }
+
         private static IEnumerable<StaticTextureAtlas> BakedAtlases
             => AtlasBakingTests.CurrentLoadAtlases.Where(static atlas =>
                 atlas.ColorTexture != null && atlas.textures.Count > 0 && !atlas.textures.Contains(atlas.ColorTexture));

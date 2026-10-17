@@ -4,20 +4,10 @@
   <author>綠菇</author>
   <packageId>Taranchuk.FasterGameLoading.InGameTests</packageId>
   <supportedVersions>
-    <li>1.6</li>
+    <li>1.7</li>
   </supportedVersions>
-  <description>Development-only RimTest Redux suites for Faster Game Loading. Not for players.</description>
+  <description>Development-only DevTools tests and benchmarks for Faster Game Loading. Not for players.</description>
   <!-- FGL 不列為硬相依：rimworld-mod-mcp 0.1.5 把硬相依當成「排在其後」，與下方 loadBefore 形成循環而拒絕啟動；FGL 一律以 companion_mods 帶入。 -->
-  <modDependencies>
-    <li>
-      <packageId>ilyvion.rimtestredux</packageId>
-      <displayName>RimTest Redux</displayName>
-      <steamWorkshopUrl>steam://url/CommunityFilePage/3762405308</steamWorkshopUrl>
-    </li>
-  </modDependencies>
-  <loadAfter>
-    <li>ilyvion.rimtestredux</li>
-  </loadAfter>
   <!-- 刻意排在 FGL 之前：內容載入探針必須在 FGL 建構子啟動提早載入前就位。 -->
   <loadBefore>
     <li>Taranchuk.FasterGameLoading</li>

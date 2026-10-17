@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
-using RimTestRedux;
+using DevTools.Testing;
 using UnityEngine;
 
 namespace FasterGameLoading.InGameTests
@@ -13,9 +13,11 @@ namespace FasterGameLoading.InGameTests
     /// Unity 只會每幀記一行「null texture passed to GUI.DrawTexture」，不會丟例外。
     /// 以探針記下每一輪呼叫端的堆疊，讓來源一目了然。
     /// </summary>
-    [TestSuite]
-    internal static class NullTextureDrawTests
+    [TestFixture(TestType.MainMenu)]
+    internal class NullTextureDrawTests
     {
+        public NullTextureDrawTests() { }
+
         [Test]
         public static void NoNullTextureIsDrawn()
         {
@@ -50,8 +52,6 @@ namespace FasterGameLoading.InGameTests
 
         public static IEnumerable<MethodBase> TargetMethods() => Targets;
 
-        private static readonly Assembly RimTestReduxAssembly = typeof(RimTestReduxMod).Assembly;
-
         public static void Prefix([HarmonyArgument(1)] Texture image)
         {
             if (image != null) return;
@@ -60,9 +60,6 @@ namespace FasterGameLoading.InGameTests
                 .Select(static f => f.GetMethod())
                 .Where(static m => m != null && !m.Name.Contains(nameof(GUI.DrawTexture)))
                 .ToList();
-            // RimTest Redux 把工具列圖示存在 [StaticConstructorOnStartup] 的靜態欄位，語言重載後指向已銷毀的貼圖；
-            // 這是測試框架自己的限制，與 FGL 無關。
-            if (frames.Any(static m => m.DeclaringType?.Assembly == RimTestReduxAssembly)) return;
             var caller = string.Join(" <- ", frames.Take(4).Select(static m => $"{m.DeclaringType?.Name}.{m.Name}"));
             lock (Callers)
             {

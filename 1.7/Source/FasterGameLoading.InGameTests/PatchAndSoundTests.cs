@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
-using RimTestRedux;
+using DevTools.Testing;
 using RimWorld;
 using RimWorld.Planet;
 using Verse;
@@ -12,9 +12,11 @@ namespace FasterGameLoading.InGameTests
     /// 在真實執行環境確認 Harmony patch 依設定正確套用／解除。
     /// 單元測試只能驗證轉譯器產生的 IL，無法確認 PatchAll 與 Prepare() 在實際啟動時的結果。
     /// </summary>
-    [TestSuite]
-    internal static class PatchApplicationTests
+    [TestFixture(TestType.MainMenu)]
+    internal class PatchApplicationTests
     {
+        public PatchApplicationTests() { }
+
         [Test]
         public static void AlwaysOnPatchesAreApplied()
         {
@@ -74,13 +76,15 @@ namespace FasterGameLoading.InGameTests
     }
 
     /// <summary>延遲的 SubSoundDef 解析是否真的全部完成。</summary>
-    [TestSuite]
-    internal static class DeferredSoundTests
+    [TestFixture(TestType.MainMenu)]
+    internal class DeferredSoundTests
     {
+        public DeferredSoundTests() { }
+
         [Test]
         public static void SubSoundQueueIsDrained()
         {
-            Assert.That(FasterGameLoadingMod.delayedActions.SubSoundDefToResolveCount).Is.EqualTo(0);
+            Expect.AreEqual(FasterGameLoadingMod.delayedActions.SubSoundDefToResolveCount, 0, "deferred sub-sound queue was not drained");
         }
 
         /// <summary>
@@ -94,8 +98,8 @@ namespace FasterGameLoading.InGameTests
             var tryPlay = AccessTools.Method(typeof(SubSoundDef), nameof(SubSoundDef.TryPlay));
             var sub = SoundDefOf.Click.subSounds[0];
             int expectedGrains = sub.resolvedGrains.Count;
-            Assert.That(expectedGrains).Is.GreaterThan(0);
-            Assert.That(delayedActions.SubSoundDefToResolveCount).Is.EqualTo(0);
+            Expect.GreaterThan(expectedGrains, 0, "click sound contains no resolved grains");
+            Expect.AreEqual(delayedActions.SubSoundDefToResolveCount, 0, "sub-sound queue was not empty before the on-demand test");
 
             try
             {
@@ -104,15 +108,15 @@ namespace FasterGameLoading.InGameTests
                 // PatchCategory(string) 取的是呼叫端組件（本測試 mod），必須明確指定 FGL 的組件。
                 FasterGameLoadingMod.harmony.PatchCategory(typeof(FasterGameLoadingMod).Assembly, "SoundStarter");
                 sub.ResolveReferences();
-                Assert.That(delayedActions.SubSoundDefToResolveCount).Is.EqualTo(1);
-                Assert.That(sub.resolvedGrains.Count).Is.EqualTo(0);
+                Expect.AreEqual(delayedActions.SubSoundDefToResolveCount, 1, "resolving the SubSoundDef did not queue exactly one deferred action");
+                Expect.AreEqual(sub.resolvedGrains.Count, 0, "SubSoundDef resolved before the play request");
 
                 sub.TryPlay(SoundInfo.OnCamera());
 
-                Assert.That(sub.resolvedGrains.Count).Is.EqualTo(expectedGrains);
-                Assert.That(delayedActions.SubSoundDefToResolveCount).Is.EqualTo(0);
+                Expect.AreEqual(sub.resolvedGrains.Count, expectedGrains, "play request did not restore resolved sound grains");
+                Expect.AreEqual(delayedActions.SubSoundDefToResolveCount, 0, "play request did not drain the selected sub-sound action");
                 // 其餘 SubSoundDef 尚未全部解析前，攔截要保留。
-                Assert.That(FglState.HasFglPatch(tryPlay)).Is.True();
+                Expect.IsTrue(FglState.HasFglPatch(tryPlay), "SoundStarter interception was removed before all sub-sounds were resolved");
             }
             finally
             {
