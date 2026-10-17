@@ -27,12 +27,20 @@ public static class ModContentLoaderTexture2D_LoadTexture_Patch
     /// <summary>啟動完成後設為 true，讓仍在執行的預讀迴圈提早結束。</summary>
     private static volatile bool _preloadStopped;
     private static Task _preloadTask = Task.CompletedTask;
-    /// <summary>紋理快取命中次數。公開供診斷／測試讀寫，寫入請經 Interlocked。</summary>
-#pragma warning disable MA0069
-    public static int cacheLoadHits;
-    /// <summary>紋理快取失敗次數。公開供診斷／測試讀寫，寫入請經 Interlocked。</summary>
-    public static int cacheLoadFailures;
-#pragma warning restore MA0069
+    /// <summary>紋理快取命中次數。公開唯讀供診斷與測試讀取；寫入一律經 Interlocked。</summary>
+    public static int CacheLoadHits
+    {
+        get => Volatile.Read(ref cacheLoadHits);
+        internal set => Interlocked.Exchange(ref cacheLoadHits, value);
+    }
+    /// <summary>紋理快取失敗次數。公開唯讀供診斷與測試讀取；寫入一律經 Interlocked。</summary>
+    public static int CacheLoadFailures
+    {
+        get => Volatile.Read(ref cacheLoadFailures);
+        internal set => Interlocked.Exchange(ref cacheLoadFailures, value);
+    }
+    private static int cacheLoadHits;
+    private static int cacheLoadFailures;
 
     static ModContentLoaderTexture2D_LoadTexture_Patch()
     {

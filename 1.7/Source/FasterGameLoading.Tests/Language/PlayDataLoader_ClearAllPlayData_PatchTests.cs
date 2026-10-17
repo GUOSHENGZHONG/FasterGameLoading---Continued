@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ public class PlayDataLoader_ClearAllPlayData_PatchTests
 
     private static bool MockIsInMainThread(ref bool __result)
     {
-        __result = Thread.CurrentThread.ManagedThreadId == mainThreadId;
+        __result = Environment.CurrentManagedThreadId == mainThreadId;
         return false;
     }
 
@@ -33,7 +34,7 @@ public class PlayDataLoader_ClearAllPlayData_PatchTests
         {
             if (!countResets) return;
             Interlocked.Increment(ref resetCount);
-            lastResetThreadId = Thread.CurrentThread.ManagedThreadId;
+            lastResetThreadId = Environment.CurrentManagedThreadId;
         });
     }
 
@@ -46,7 +47,7 @@ public class PlayDataLoader_ClearAllPlayData_PatchTests
     [SetUp]
     public void SetUp()
     {
-        mainThreadId = Thread.CurrentThread.ManagedThreadId;
+        mainThreadId = Environment.CurrentManagedThreadId;
         AccessTools.Field(typeof(PlayDataLoader_ClearAllPlayData_Patch), "resetBySelectLanguage").SetValue(null, false);
         SessionLifecycle.DrainMainThreadRaises();
         resetCount = 0;
@@ -109,11 +110,13 @@ public class PlayDataLoader_ClearAllPlayData_PatchTests
         var recovery = Task.Run(PlayDataLoader_ClearAllPlayData_Patch.Prefix);
 
         var stopwatch = Stopwatch.StartNew();
+        Assert.That(resetCount, Is.Zero, "主執行緒泵送前不得在載入事件緒執行重置。");
+        // 泵送完成重置後，背景 Task 可能尚未結束；迴圈內不可再假設重置次數為零。
+        var spin = new SpinWait();
         while (!recovery.IsCompleted && stopwatch.ElapsedMilliseconds < 5000)
         {
-            Assert.That(resetCount, Is.Zero, "主執行緒泵送前不得在載入事件緒執行重置。");
             SessionLifecycle.DrainMainThreadRaises();
-            Thread.Sleep(1);
+            spin.SpinOnce();
         }
 
         Assert.That(recovery.IsCompleted, Is.True, "主執行緒執行重置後，載入事件緒應繼續。");

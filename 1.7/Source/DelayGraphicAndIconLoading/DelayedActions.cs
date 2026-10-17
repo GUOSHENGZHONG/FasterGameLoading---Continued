@@ -127,16 +127,11 @@ public class DelayedActions : MonoBehaviour
     /// <summary>語言切換時丟棄所有尚未執行的延遲動作，並回到尚未開始的階段。</summary>
     public void ClearQueues()
     {
-        Clear(graphicsToLoad);
-        Clear(iconsToLoad);
-        Clear(subSoundDefToResolve);
+        graphicsToLoad.Clear();
+        iconsToLoad.Clear();
+        subSoundDefToResolve.Clear();
         pendingSubSounds.Clear();
         Phase = DeferredPhase.Idle;
-    }
-
-    private static void Clear<T>(ConcurrentQueue<T> queue)
-    {
-        while (queue.TryDequeue(out _)) { }
     }
 
     // ── 提早載入狀態與處理器 ──
@@ -323,15 +318,7 @@ public class DelayedActions : MonoBehaviour
                 {
                     if (map.mapDrawer.sections != null)
                     {
-                        // 快照語義：先收集再走訪，避免列舉期間 lister 變動；不使用 LINQ（啟動熱路徑 S3267）。
-                        List<Thing> thingsToDirty = [];
-                        foreach (var def in loadedDefs)
-                        {
-                            var things = map.listerThings.ThingsOfDef(def);
-                            if (things == null) continue;
-                            thingsToDirty.AddRange(things);
-                        }
-                        foreach (var thing in thingsToDirty)
+                        foreach (var thing in CollectThingsToDirty(map, loadedDefs))
                         {
                             map.mapDrawer.MapMeshDirty(thing.Position,
                                 MapMeshFlagDefOf.Things | MapMeshFlagDefOf.Buildings);
@@ -344,6 +331,22 @@ public class DelayedActions : MonoBehaviour
         {
             FGLLog.Warning("Error updating map mesh:", ex);
         }
+    }
+
+    /// <summary>
+    /// 收集地圖上與已載入 def 相關、需要重繪圖格的東西。
+    /// 快照語義：先收集再走訪，避免列舉期間 lister 變動；不使用 LINQ（啟動熱路徑 S3267）。
+    /// </summary>
+    private static List<Thing> CollectThingsToDirty(Map map, IReadOnlyList<ThingDef> loadedDefs)
+    {
+        List<Thing> thingsToDirty = [];
+        foreach (var def in loadedDefs)
+        {
+            var things = map.listerThings.ThingsOfDef(def);
+            if (things == null) continue;
+            thingsToDirty.AddRange(things);
+        }
+        return thingsToDirty;
     }
 
     /// <summary>在時間預算內批次載入延遲的圖示紋理。</summary>

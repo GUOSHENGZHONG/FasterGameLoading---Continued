@@ -469,4 +469,89 @@ public class DelayedActionsStageTests
             harmony.Unpatch(mapsProp, patchMaps.method);
         }
     }
+
+    private static List<Map> mockedMaps;
+    private static List<IntVec3> dirtyPositions;
+
+    private static bool MockFindMaps(ref List<Map> __result)
+    {
+        __result = mockedMaps;
+        return false;
+    }
+
+    private static bool RecordMapMeshDirty(ref IntVec3 loc, ulong dirtyFlags)
+    {
+        dirtyPositions?.Add(loc);
+        return false;
+    }
+
+    /// <summary>
+    /// 空的前置補丁，用來迫使執行期重新編譯 UpdateMapMeshForLoadedDefs。
+    /// Current.Game 與 Find.Maps 都是會被內嵌的簡單取值函式；若受測方法早於補丁就被編譯，
+    /// 內嵌的舊碼會讓測試的 mock 失效（這也是這段內圈過去沒有測試涵蓋的原因）。
+    /// </summary>
+    private static bool ForceMethodRecompile() => true;
+
+    /// <summary>組出假地圖：只帶入 listerThings 的 def → 東西對照與空 MapDrawer，避免動到遊戲執行期狀態。</summary>
+    private static Map CreateFakeMap(Dictionary<ThingDef, List<Thing>> thingsByDef)
+    {
+        var map = (Map)FormatterServices.GetUninitializedObject(typeof(Map));
+        var drawer = (MapDrawer)FormatterServices.GetUninitializedObject(typeof(MapDrawer));
+        // sections 與 listsByDef 不是公開成員，測試專案沒有 Publicizer，故以反射填入。
+        AccessTools.Field(typeof(MapDrawer), "sections").SetValue(drawer, new Section[0, 0]);
+        var lister = (ListerThings)FormatterServices.GetUninitializedObject(typeof(ListerThings));
+        AccessTools.Field(typeof(ListerThings), "listsByDef").SetValue(lister, thingsByDef);
+        map.mapDrawer = drawer;
+        map.listerThings = lister;
+        return map;
+    }
+
+    [Test]
+    public void UpdateMapMeshForLoadedDefs_DirtiesOnlyThingsOfLoadedDefs()
+    {
+        var loadedDef = CreateMockThingDef("TestMeshLoaded");
+        var missingListDef = CreateMockThingDef("TestMeshMissing");
+        var otherDef = CreateMockThingDef("TestMeshOther");
+        var loadedThing = (Thing)FormatterServices.GetUninitializedObject(typeof(Thing));
+        AccessTools.Field(typeof(Thing), "positionInt").SetValue(loadedThing, new IntVec3(3, 0, 7));
+        var otherThing = (Thing)FormatterServices.GetUninitializedObject(typeof(Thing));
+        AccessTools.Field(typeof(Thing), "positionInt").SetValue(otherThing, new IntVec3(9, 0, 9));
+        mockedMaps = [CreateFakeMap(new Dictionary<ThingDef, List<Thing>>
+        {
+            [loadedDef] = [loadedThing],
+            [missingListDef] = null,
+            [otherDef] = [otherThing],
+        })];
+        dirtyPositions = [];
+
+        var gameProp = AccessTools.PropertyGetter(typeof(Current), nameof(Current.Game));
+        var mapsProp = AccessTools.PropertyGetter(typeof(Find), nameof(Find.Maps));
+        var meshMethod = AccessTools.Method(typeof(DelayedActions), nameof(DelayedActions.UpdateMapMeshForLoadedDefs));
+        var dirty = AccessTools.Method(typeof(MapDrawer), nameof(MapDrawer.MapMeshDirty), [typeof(IntVec3), typeof(ulong)]);
+        var patchGame = new HarmonyMethod(AccessTools.Method(typeof(DelayedActionsStageTests), nameof(MockCurrentGame)));
+        var patchMaps = new HarmonyMethod(AccessTools.Method(typeof(DelayedActionsStageTests), nameof(MockFindMaps)));
+        var patchRecompile = new HarmonyMethod(AccessTools.Method(typeof(DelayedActionsStageTests), nameof(ForceMethodRecompile)));
+        var patchDirty = new HarmonyMethod(AccessTools.Method(typeof(DelayedActionsStageTests), nameof(RecordMapMeshDirty)));
+        harmony.Patch(gameProp, prefix: patchGame);
+        harmony.Patch(mapsProp, prefix: patchMaps);
+        harmony.Patch(meshMethod, prefix: patchRecompile);
+        harmony.Patch(dirty, prefix: patchDirty);
+        try
+        {
+            DelayedActions.UpdateMapMeshForLoadedDefs([loadedDef, missingListDef]);
+
+            Assert.That(dirtyPositions, Has.Count.EqualTo(1),
+                "只有已載入 def 的東西要重繪；lister 缺少該 def 或其他 def 都不受影響。");
+            Assert.That(dirtyPositions[0], Is.EqualTo(new IntVec3(3, 0, 7)));
+        }
+        finally
+        {
+            harmony.Unpatch(gameProp, patchGame.method);
+            harmony.Unpatch(mapsProp, patchMaps.method);
+            harmony.Unpatch(meshMethod, patchRecompile.method);
+            harmony.Unpatch(dirty, patchDirty.method);
+            mockedMaps = null;
+            dirtyPositions = null;
+        }
+    }
 }

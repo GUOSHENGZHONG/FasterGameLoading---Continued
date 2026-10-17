@@ -161,11 +161,13 @@ public class TextureCacheManagerLifecycleTests
     }
 
     /// <summary>
-    /// 快取檔名是 UTF-8 鍵的 MD5 小寫十六進位；數值固定寫死，確保實作改動後
+    /// 快取檔名是 UTF-8 鍵的 SHA-256 小寫十六進位；數值固定寫死，確保實作改動後
     /// 使用者磁碟上既有的降質快取仍能命中。涵蓋 ASCII 與非 ASCII 鍵。
+    /// 2026-10-17 由 MD5 改為 SHA-256（SonarAnalyzer S4790）：改動前產生的快取檔名不再命中，
+    /// 那些檔案會被重建流程淘汰，並在下次載入時重新降質一次。
     /// </summary>
-    [TestCase("C:/nonexistent/FGL/pin/Textures/Things/Item/Foo_south.png", "2e9408bbaa017a53202315895dd51bab")]
-    [TestCase("C:/Mods/\u65e5\u672c\u8a9e/\u30c6\u30af\u30b9\u30c1\u30e3/\u30d5\u30a1\u30a4\u30eb.png", "6956805818c88ece622e5acb90ba47f6")]
+    [TestCase("C:/nonexistent/FGL/pin/Textures/Things/Item/Foo_south.png", "b229f9602787b103f0677ef8786aa602dc8d23e07f490da2fbeea65e61833ae2")]
+    [TestCase("C:/Mods/\u65e5\u672c\u8a9e/\u30c6\u30af\u30b9\u30c1\u30e3/\u30d5\u30a1\u30a4\u30eb.png", "28b96dd247753f27aac20fd5b700bc5adf95e2c591ed33841b6ab98bbbc2df07")]
     public void GetCachePath_HashesUtf8KeyToPinnedValue(string originalPath, string expectedHash)
     {
         // 檔案不存在時快取鍵就是原始路徑本身。
@@ -177,9 +179,9 @@ public class TextureCacheManagerLifecycleTests
     {
         // 600 個 ASCII 字元的鍵超過堆疊緩衝上限，走堆積路徑；200 個 CJK 字元（UTF-8 共 600 位元組）走堆疊緩衝且接近填滿。
         Assert.That(manager.GetCachePath("C:/" + new string('a', 600) + ".png"),
-            Is.EqualTo(Path.Combine(cacheDir, "50094a715a4f486dfcc4abbc650d4d64.png")));
+            Is.EqualTo(Path.Combine(cacheDir, "fa2082c0f7e208024dd2443d15d19533897b8afad8342d1d15fedbcda744d231.png")));
         Assert.That(manager.GetCachePath("C:/" + new string('\u9577', 200) + ".png"),
-            Is.EqualTo(Path.Combine(cacheDir, "81a2bc5f8b94bd99c8e9ba25e8f3d8fd.png")));
+            Is.EqualTo(Path.Combine(cacheDir, "c4e9eb81c2e67fde3d5a3a856d3ca4e339835ae4c82770ee8c35350f55d0ef48.png")));
     }
 
     [Test]
@@ -189,7 +191,7 @@ public class TextureCacheManagerLifecycleTests
         string stagedPath = null;
         manager.Rebuild(rebuild => stagedPath = rebuild.GetCachePath(originalPath));
 
-        Assert.That(stagedPath, Is.EqualTo(Path.Combine(StagingDir, "2e9408bbaa017a53202315895dd51bab.png")));
+        Assert.That(stagedPath, Is.EqualTo(Path.Combine(StagingDir, "b229f9602787b103f0677ef8786aa602dc8d23e07f490da2fbeea65e61833ae2.png")));
     }
 
     [Test]

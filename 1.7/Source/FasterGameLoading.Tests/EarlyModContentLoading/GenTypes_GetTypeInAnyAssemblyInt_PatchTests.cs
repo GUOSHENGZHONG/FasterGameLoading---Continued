@@ -209,7 +209,17 @@ public class GenTypes_GetTypeInAnyAssemblyInt_PatchTests
         Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults["Dup.Same"].Assembly.GetName().Name, Is.EqualTo("FglDupFirst"));
     }
 
-    private static System.Reflection.Assembly DefineTypes(string assemblyName, params string[] typeNames)
+    [Test]
+    public void WarmupFullNames_WhenOneAssemblyIsUnreadable_SkipsItAndWarmsTheRest()
+    {
+        var readable = DefineTypes("FglUnreadableNeighbor", "FglUnreadableNeighbor.Kept");
+
+        // 讀不到型別的組件（這裡以 null 模擬讀取失敗）不得中斷其他組件的預熱。
+        Assert.DoesNotThrow(() => GenTypes_GetTypeInAnyAssemblyInt_Patch.WarmupFullNames([null, readable]));
+        Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.cachedResults.ContainsKey("FglUnreadableNeighbor.Kept"), Is.True);
+    }
+
+    private static System.Reflection.Emit.AssemblyBuilder DefineTypes(string assemblyName, params string[] typeNames)
     {
         var assembly = System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(
             new System.Reflection.AssemblyName(assemblyName), System.Reflection.Emit.AssemblyBuilderAccess.Run);

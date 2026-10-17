@@ -80,7 +80,7 @@ namespace FasterGameLoading.InGameTests
             foreach (var isUi in new[] { true, false })
             {
                 using var probe = new Probe(isUi);
-                int hitsBefore = ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadHits;
+                int hitsBefore = ModContentLoaderTexture2D_LoadTexture_Patch.CacheLoadHits;
 
                 var texture = probe.Load();
 
@@ -88,10 +88,10 @@ namespace FasterGameLoading.InGameTests
                 {
                     // Graphics Settings+／Image Opt 接手貼圖載入時，FGL 必須完全讓開。
                     Expect.AreEqual(OriginalSize, texture.width);
-                    Expect.AreEqual(hitsBefore, ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadHits);
+                    Expect.AreEqual(hitsBefore, ModContentLoaderTexture2D_LoadTexture_Patch.CacheLoadHits);
                     continue;
                 }
-                Expect.AreEqual(hitsBefore + 1, ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadHits);
+                Expect.AreEqual(hitsBefore + 1, ModContentLoaderTexture2D_LoadTexture_Patch.CacheLoadHits);
                 Expect.AreEqual(Probe.FileNameWithoutExtension, texture.name);
 
                 var vanilla = probe.LoadCacheFileDirectly();
@@ -115,14 +115,14 @@ namespace FasterGameLoading.InGameTests
 
             using var probe = new Probe(isUi: false);
             File.SetLastWriteTimeUtc(probe.OriginalPath, DateTime.UtcNow.AddHours(1));
-            int failuresBefore = ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadFailures;
+            int failuresBefore = ModContentLoaderTexture2D_LoadTexture_Patch.CacheLoadFailures;
 
             var texture = probe.Load();
 
             Expect.AreEqual(OriginalSize, texture.width);
             Expect.IsFalse(FasterGameLoadingMod.Instance.CacheManager.ResizedTextureCache.ContainsKey(probe.OriginalPath));
             // 過期屬正常失效，不是載入失敗。
-            Expect.AreEqual(failuresBefore, ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadFailures);
+            Expect.AreEqual(failuresBefore, ModContentLoaderTexture2D_LoadTexture_Patch.CacheLoadFailures);
         }
 
         /// <summary>
@@ -146,12 +146,12 @@ namespace FasterGameLoading.InGameTests
             foreach (var (width, height, target) in AspectRatioCases)
             {
                 using var probe = new ResizeProbe(width, height);
-                int hitsBefore = ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadHits;
+                int hitsBefore = ModContentLoaderTexture2D_LoadTexture_Patch.CacheLoadHits;
 
                 probe.Resize(resize, target);
                 var texture = probe.Load();
 
-                if (ModContentLoaderTexture2D_LoadTexture_Patch.cacheLoadHits != hitsBefore + 1)
+                if (ModContentLoaderTexture2D_LoadTexture_Patch.CacheLoadHits != hitsBefore + 1)
                 {
                     failures.Add(FormattableString.Invariant($"{width}x{height} to {target}: not served from the downscale cache ({texture.width}x{texture.height})"));
                     continue;

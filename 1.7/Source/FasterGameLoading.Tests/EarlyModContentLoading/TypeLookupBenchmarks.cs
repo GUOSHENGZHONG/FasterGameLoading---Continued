@@ -17,6 +17,11 @@ public class TypeLookupBenchmarks
         try
         {
             GenTypes_GetTypeInAnyAssemblyInt_Patch.WarmupFullNames(assemblies);
+            // 預熱後完整名稱必須直接命中快取；斷言放在量測迴圈外，避免斷言配置污染 bytes 量測。
+            string warmedProbe = typeof(Verse.ThingDef).FullName;
+            Type warmedResult = null;
+            Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.Prefix(ref warmedResult, out _, ref warmedProbe, "Verse"), Is.False);
+            Assert.That(warmedResult, Is.SameAs(typeof(Verse.ThingDef)));
             for (int sample = 0; sample < 7; sample++)
             {
                 GenTypes_GetTypeInAnyAssemblyInt_Patch.ClearCache();
@@ -55,6 +60,12 @@ public class TypeLookupBenchmarks
                 allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
                 TestContext.Out.WriteLine($"sample={sample}, calls={iterations}, ms={ms:F3}, bytes={allocated}");
             }
+
+            // 量測後再驗一次快取命中語意；斷言不進量測迴圈，避免配置污染 bytes 量測。
+            string hitProbe = names[0];
+            Type hitResult = null;
+            Assert.That(GenTypes_GetTypeInAnyAssemblyInt_Patch.Prefix(ref hitResult, out _, ref hitProbe, "Verse"), Is.False);
+            Assert.That(hitResult, Is.SameAs(types[0]));
 
             void Run(int count)
             {

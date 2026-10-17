@@ -138,6 +138,16 @@ public static class TextureResizer
     /// </summary>
     public static byte[] EncodePng(ResizedPixels pixels)
     {
+        var topDownPixels = FlipRowsTopDown(pixels);
+        return ImageConversion.EncodeArrayToPNG(topDownPixels, pixels.Format, (uint)pixels.Width, (uint)pixels.Height);
+    }
+
+    /// <summary>
+    /// 把 Unity 由下往上的列序翻成 PNG 由上往下的列序（與 EncodeToPNG 的結果一致）。
+    /// 純記憶體操作，與 <see cref="EncodePng"/> 分開以便單獨測試。
+    /// </summary>
+    internal static byte[] FlipRowsTopDown(ResizedPixels pixels)
+    {
         int rowBytes = pixels.Width * 4;
         var topDownPixels = new byte[pixels.Rgba.Length];
         for (int y = 0; y < pixels.Height; y++)
@@ -145,6 +155,6 @@ public static class TextureResizer
             Buffer.BlockCopy(pixels.Rgba, y * rowBytes, topDownPixels, (pixels.Height - 1 - y) * rowBytes, rowBytes);
         }
 
-        return ImageConversion.EncodeArrayToPNG(topDownPixels, pixels.Format, (uint)pixels.Width, (uint)pixels.Height);
+        return topDownPixels;
     }
 }

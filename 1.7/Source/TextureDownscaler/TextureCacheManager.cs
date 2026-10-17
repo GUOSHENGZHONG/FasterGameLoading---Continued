@@ -49,7 +49,7 @@ public class TextureCacheManager
     }
 
     /// <summary>
-    /// 根據原始檔案路徑產生正式快取目錄下的 MD5 快取檔案路徑。
+    /// 根據原始檔案路徑產生正式快取目錄下的 SHA-256 快取檔案路徑。
     /// 快取鍵結合路徑、檔案大小和最後修改時間，確保原始檔案變更時自動失效。
     /// </summary>
     public string GetCachePath(string originalPath)
@@ -59,7 +59,7 @@ public class TextureCacheManager
 
     private static string ComputeCachePathFromKey(string key, string directory)
     {
-        // MD5.HashData 是靜態一次性 API，執行緒安全，不需要每執行緒維護 MD5 實例。
+        // SHA256.HashData 是靜態一次性 API，執行緒安全，不需要每執行緒維護雜湊實例。
         // 鍵是完整路徑加上大小與修改時間，通常一兩百個字元；依最壞情況每字元 3 位元組，1024 位元組可涵蓋約 340 個字元，
         // UTF-8 編碼寫進堆疊緩衝，省下 byte[] 與雜湊結果的配置；更長的鍵才退回堆積。
         const int StackBufferSize = 1024;
@@ -67,8 +67,8 @@ public class TextureCacheManager
             ? stackalloc byte[StackBufferSize]
             : new byte[Encoding.UTF8.GetByteCount(key)];
         int utf8Length = Encoding.UTF8.GetBytes(key, utf8);
-        Span<byte> hash = stackalloc byte[MD5.HashSizeInBytes];
-        MD5.HashData(utf8[..utf8Length], hash);
+        Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
+        SHA256.HashData(utf8[..utf8Length], hash);
         return Path.Combine(directory, Convert.ToHexStringLower(hash) + ".png");
     }
 

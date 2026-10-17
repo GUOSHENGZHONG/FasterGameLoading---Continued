@@ -44,48 +44,13 @@ public static class GenTypes_GetTypeInAnyAssemblyInt_Patch
     /// </summary>
     internal static void WarmupFullNames(IEnumerable<Assembly> assembliesInSearchOrder)
     {
-        // 不分大小寫的名稱 → 第一次出現的拼法，用來找出只差大小寫的名稱。
         var firstSpelling = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         List<string> caseCollisions = null;
         foreach (var assembly in assembliesInSearchOrder)
         {
-            Type[] types;
-            try
+            foreach (var type in TypesOrEmpty(assembly))
             {
-                // 與 AllTypes 的背景預載共用列舉結果，同一組件不掃第二遍。
-                types = AssemblyTypesCache.Get(assembly);
-            }
-            catch
-            {
-                // 忽略個別組件型別讀取失敗
-                continue;
-            }
-
-            foreach (var type in types)
-            {
-                try
-                {
-                    var fullName = type?.FullName;
-                    if (string.IsNullOrEmpty(fullName))
-                    {
-                        continue;
-                    }
-                    if (!firstSpelling.TryGetValue(fullName, out var first))
-                    {
-                        firstSpelling.Add(fullName, fullName);
-                        cachedResults.TryAdd(fullName, type);
-                    }
-                    else if (!string.Equals(first, fullName, StringComparison.Ordinal))
-                    {
-                        // 大小寫完全相同的重複名稱沿用先登記者（與原版相同）；只差大小寫的則整組移除。
-                        (caseCollisions ??= []).Add(first);
-                        caseCollisions.Add(fullName);
-                    }
-                }
-                catch
-                {
-                    // 忽略個別型別反射處理錯誤
-                }
+                TrackTypeFullName(type, firstSpelling, cachedResults, ref caseCollisions);
             }
         }
 
@@ -95,6 +60,50 @@ public static class GenTypes_GetTypeInAnyAssemblyInt_Patch
             {
                 cachedResults.TryRemove(name, out _);
             }
+        }
+    }
+
+    private static void TrackTypeFullName(Type type, Dictionary<string, string> firstSpelling,
+        ConcurrentDictionary<string, Type> cachedResults, ref List<string> caseCollisions)
+    {
+        try
+        {
+            var fullName = type?.FullName;
+            if (string.IsNullOrEmpty(fullName))
+            {
+                return;
+            }
+            if (!firstSpelling.TryGetValue(fullName, out var first))
+            {
+                firstSpelling.Add(fullName, fullName);
+                cachedResults.TryAdd(fullName, type);
+            }
+            else if (!string.Equals(first, fullName, StringComparison.Ordinal))
+            {
+                (caseCollisions ??= []).Add(first);
+                caseCollisions.Add(fullName);
+            }
+        }
+        catch
+        {
+            // 忽略個別型別反射處理錯誤
+        }
+    }
+
+    /// <summary>
+    /// 取得組件的型別清單；個別組件讀取失敗時回傳空陣列，其餘組件照常預熱。
+    /// </summary>
+    private static Type[] TypesOrEmpty(Assembly assembly)
+    {
+        try
+        {
+            // 與 AllTypes 的背景預載共用列舉結果，同一組件不掃第二遍。
+            return AssemblyTypesCache.Get(assembly);
+        }
+        catch
+        {
+            // 忽略個別組件型別讀取失敗
+            return [];
         }
     }
 
