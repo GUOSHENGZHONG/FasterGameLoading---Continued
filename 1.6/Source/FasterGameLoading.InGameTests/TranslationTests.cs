@@ -96,7 +96,7 @@ namespace FasterGameLoading.InGameTests
             => Path.GetFullPath(path).Replace('\\', '/').ToLowerInvariant();
 
         private static string LanguageDataDirectory()
-            => Path.Combine(FasterGameLoadingMod.Instance.Content.RootDir, "LanguageData");
+            => Path.Combine(FasterGameLoadingMod.Instance.Content.RootDir, "1.6", "LanguageData");
 
         // 與 TranslationInjector 相同的選擇規則：語言資料夾先找 folderName，再找 legacyFolderName；沒有語言資料夾或 Keyed 時回傳 null。
         private static string KeyedDirectory(LoadedLanguage language)

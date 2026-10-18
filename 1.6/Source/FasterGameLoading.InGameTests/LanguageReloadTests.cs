@@ -87,7 +87,7 @@ namespace FasterGameLoading.InGameTests
         public static void ReloadRoundExercisesEnglishFallback()
         {
             if (!AfterReload) return;
-            var candidate = Path.Combine(FasterGameLoadingMod.Instance.Content.RootDir, "LanguageData", LanguageDatabase.activeLanguage.folderName);
+            var candidate = Path.Combine(FasterGameLoadingMod.Instance.Content.RootDir, "1.6", "LanguageData", LanguageDatabase.activeLanguage.folderName);
             Assert.That(Directory.Exists(candidate)).Is.False();
         }
 

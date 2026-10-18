@@ -77,7 +77,7 @@ namespace FasterGameLoading.InGameTests
         public static void ReloadRoundExercisesEnglishFallback()
         {
             if (!AfterReload) return;
-            var candidate = Path.Combine(FasterGameLoadingMod.Instance.Content.RootDir, "LanguageData", LanguageDatabase.activeLanguage.folderName);
+            var candidate = Path.Combine(FasterGameLoadingMod.Instance.Content.RootDir, "1.7", "LanguageData", LanguageDatabase.activeLanguage.folderName);
             Expect.IsFalse(Directory.Exists(candidate), "FGL unexpectedly provides translations for the reload language");
         }
 

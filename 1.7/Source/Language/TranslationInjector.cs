@@ -15,13 +15,13 @@ internal static class TranslationInjector
             AccessTools.Method(typeof(LoadedLanguage), "LoadFromFile_Keyed"));
 
     /// <summary>
-    /// 手動注入來自 LanguageData/ 資料夾的翻譯 Key。
+    /// 手動注入來自 1.7/LanguageData/ 資料夾的翻譯 Key。
     ///
     /// 此模組設定為先於 Core 載入；原版 LoadedLanguage.LoadMetadata 會採用載入順序中第一個
     /// 含有該語言資料夾的模組來讀 LanguageInfo.xml。若將翻譯放在原版自動掃描的 Languages/，
     /// 便會讀到本模組沒有 LanguageInfo.xml 的資料夾，退回預設的 LanguageWorker 並破壞大小寫規則。
     ///
-    /// 為了避免這個問題，我們將 Languages/ 重新命名為 LanguageData/（RimWorld 不會自動載入此資料夾），
+    /// 為了避免這個問題，我們將 Languages/ 重新命名為 1.7/LanguageData/（RimWorld 不會自動載入此資料夾），
     /// 由 Startup.Postfix 呼叫此方法注入翻譯。其餘行為盡量比照原版：
     /// 目前語言與預設語言（英文）各自注入對應資料夾，缺少的 Key 由原版 Translate() 逐一退回預設語言。
     /// </summary>
@@ -33,7 +33,7 @@ internal static class TranslationInjector
             if (rootDir == null)
                 return;
 
-            var languageDataDir = Path.Combine(rootDir, "LanguageData");
+            var languageDataDir = Path.Combine(rootDir, "1.7", "LanguageData");
             if (!Directory.Exists(languageDataDir))
                 return;
 

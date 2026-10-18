@@ -38,15 +38,16 @@ FasterGameLoading/
 ├── About/                         # 模組中繼資料、預覽圖與工作坊 ID
 ├── 1.6/                           # RimWorld 1.6（.NET Framework 4.7.2）
 │   ├── Assemblies/                # 編譯後的 DLL
+│   ├── LanguageData/              # 翻譯 XML 檔（EN、zh-TW、zh-CN、RU）
 │   ├── Source/                    # 1.6 原始碼
 │   ├── README.md                  # 1.6 說明文件（英文）
 │   └── README.zh-TW.md            # 1.6 說明文件（繁體中文）
 ├── 1.7/                           # RimWorld 1.7（.NET 10）
 │   ├── Assemblies/                # 編譯後的 DLL
+│   ├── LanguageData/              # 翻譯 XML 檔（EN、zh-TW、zh-CN、RU）
 │   ├── Source/                    # 1.7 原始碼，自 1.6 複製後修改
 │   ├── README.md                  # 1.7 說明文件（英文）
 │   └── README.zh-TW.md            # 1.7 說明文件（繁體中文）
-├── LanguageData/                  # 翻譯 XML 檔（EN、zh-TW、zh-CN、RU）
 ├── SteamDescriptions/             # Steam 工作坊說明的原始檔
 ├── LICENSE
 ├── README.md
@@ -54,6 +55,8 @@ FasterGameLoading/
 ```
 
 RimWorld 依執行中的版本選擇 `1.6/` 或 `1.7/`，所以各版建置都把 DLL 輸出到其 `Source/` 旁的 `Assemblies/` 資料夾。建置與測試指令請見各版 README。
+
+各版本只載入自己的 `LanguageData/`；1.7 的翻譯不包含僅適用於 1.6 的自適應圖集烘焙與較快的圖集壓縮。
 
 ## 致謝與授權
 

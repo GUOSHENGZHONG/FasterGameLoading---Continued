@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <FGL_ModName>更快的遊戲載入 - Continued</FGL_ModName>
+
+    <!-- Settings -->
+    <FGL_EarlyModContentLoading>提早載入模組內容</FGL_EarlyModContentLoading>
+    <FGL_DelayGraphicLoading>延遲圖形和圖示載入</FGL_DelayGraphicLoading>
+    <FGL_RequiresRestart>（需重新啟動遊戲）</FGL_RequiresRestart>
+    <FGL_TrimStaticAtlases>裁切靜態圖集</FGL_TrimStaticAtlases>
+    <FGL_TrimStaticAtlasesTip>每張靜態圖集只烘焙到紋理實際用到的高度，不再使用常有一半空白的 2 的次方高度。圖集佔用的記憶體更少、烘焙更快，每張紋理的像素位置不變。重新啟動遊戲後生效。</FGL_TrimStaticAtlasesTip>
+    <FGL_DeduplicateStaticAtlases>略過重複的圖集紋理</FGL_DeduplicateStaticAtlases>
+    <FGL_DeduplicateStaticAtlasesTip>RimWorld 會把可打包建築的紋理分別烘進 Building、Item 與 Misc 三組圖集。開啟後，遮罩狀態一致的紋理只保留 Building 副本；若同主紋理跨群組有不同遮罩狀態，則保留副本以避免取錯遮罩。重新啟動遊戲後生效。</FGL_DeduplicateStaticAtlasesTip>
+    <FGL_MultiThreading>多執行緒預載入</FGL_MultiThreading>
+    <FGL_TypeLookupCache>型別查詢快取</FGL_TypeLookupCache>
+    <FGL_VerboseLogging>啟用詳細日誌</FGL_VerboseLogging>
+
+    <!-- Texture Resizing -->
+    <FGL_TextureResizingExplanation>某些模組可能包含大量高解析度紋理，載入需很長時間。使用此功能縮小高解析度紋理。原始檔案不會被修改；縮小後的版本會儲存在獨立的快取目錄中，並在下次啟動時自動載入。
+        以下類型紋理將縮小至目標大小:
+        建築 - 256px
+        人物 - 256px
+        服裝 - 128px
+        武器 - 128px
+        物品 - 128px
+        植物 - 128px
+        樹木 - 256px
+        地形 - 1024px</FGL_TextureResizingExplanation>
+    <FGL_DownscaleTextures>縮小紋理</FGL_DownscaleTextures>
+    <FGL_DownscaleTexturesUnavailable>Graphics Settings+ 或 Image Opt 正在負責載入紋理，因此無法使用縮小紋理工具。</FGL_DownscaleTexturesUnavailable>
+    <FGL_DownscalingTextures>正在縮小紋理</FGL_DownscalingTextures>
+    <FGL_ClearingTextureCache>正在清除紋理快取</FGL_ClearingTextureCache>
+    <FGL_DownscaleTexturesConfirmation>是否執行紋理縮小？縮小後的紋理將單獨快取，不會修改原始模組檔案。(需要重新啟動一次)</FGL_DownscaleTexturesConfirmation>
+    <FGL_ClearTextureCache>清除紋理快取</FGL_ClearTextureCache>
+    <FGL_ClearTextureCacheConfirmation>是否清除所有已快取的縮小紋理？下次啟動時將使用原始紋理。</FGL_ClearTextureCacheConfirmation>
+    <FGL_TextureCacheStatus_Active>紋理快取已啟用：已快取 {0} 張紋理。</FGL_TextureCacheStatus_Active>
+    <FGL_TextureCacheStatus_Empty>紋理快取為空。尚未執行過紋理縮小。</FGL_TextureCacheStatus_Empty>
+
+</LanguageData>
