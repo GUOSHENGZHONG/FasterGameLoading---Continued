@@ -15,6 +15,7 @@ namespace FasterGameLoading.InGameTests
     {
         public InGameTestsMod(ModContentPack content) : base(content)
         {
+            StartupExperiments.Initialize();
             ApplySeededFglSettings(content);
             new Harmony(content.PackageId).PatchAll(typeof(InGameTestsMod).Assembly);
         }
@@ -73,6 +74,11 @@ namespace FasterGameLoading.InGameTests
 
         public static void Postfix()
         {
+            if (StartupExperiments.StartupOnly)
+            {
+                return;
+            }
+
             if (Ready || !ReadyForRound())
             {
                 return;
@@ -94,6 +100,11 @@ namespace FasterGameLoading.InGameTests
             Log.Message($"[FGL InGameTests] Round {Round} timing: realtimeSinceStartup={UnityEngine.Time.realtimeSinceStartup:F1}s, gcCollections={GC.CollectionCount(0)}, {MainThreadFileReadProbe.Summary}, {TypeEnumerationCost.Measure()}");
             waitingSince = null;
             Ready = true;
+
+            if (StartupExperiments.AutoLanguageReload)
+            {
+                AutoLanguageReloadDriver.OnRoundReady(Round);
+            }
         }
 
         private static bool ReadyForRound()

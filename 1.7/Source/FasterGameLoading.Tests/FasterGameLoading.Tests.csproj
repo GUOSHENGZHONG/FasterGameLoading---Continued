@@ -28,6 +28,10 @@
     <ProjectReference Include="..\FasterGameLoading.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\FasterGameLoading.InGameTests\StartupExperimentHelpers.cs" Link="StartupExperimentHelpers.cs" />
+  </ItemGroup>
+
   <!-- 1.7 的遊戲組件與 Harmony 3.0 沒有 NuGet 套件：直接參考並複製到測試輸出，執行期才找得到。 -->
   <ItemGroup>
     <Reference Include="0Harmony">

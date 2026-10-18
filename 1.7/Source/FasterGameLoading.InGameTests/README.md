@@ -67,3 +67,55 @@ dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj -c
 正式比較啟動速度時，到主選單的秒數讀取 Loading Progress 隔離 session 設定檔的 `loadingTimes` 最後一筆；以 `seed_config` 開啟 `trackStartupLoadingImpact` 可拆分模組與階段。主選單後的延遲圖形、圖集與音效，需另開 FGL `verboseLogging`，讀 Player.log 的 `Startup timing after the main menu appeared`。移動工作到主選單後會讓前段數字變短，不能單憑它宣稱總啟動變快。
 
 DevTools 遷移本身不會進入玩家版執行路徑。遊戲內驗證另外找出兩項 1.7 紋理問題：背景 PNG 編碼的列序，以及非 UI 快取紋理經 `LoadImage` 後遺失 mipmap。前者在手動重建快取時多做一次輸出像素列複製，不影響一般啟動；後者只在非 UI 縮小紋理快取命中時，額外配置一張貼圖並複製像素來建立 mipmap，可能增加這類啟動的 CPU 與記憶體用量。未做相同模組清單的前後計時，因此沒有量化的秒數差異。
+
+## 啟動實驗與細部診斷旗標
+
+開發附屬模組提供命令列旗標，用於對照不同啟動策略與收集細部成本：
+
+### 命令列旗標說明
+
+1. `-fglStartupDiagnostics`：
+   啟用昂貴診斷探針（XML 逐檔量測、型別查詢形態統計、延遲管線 MoveNext 包裝、音效與提早載入監控）。預設關閉；關閉時透過 Harmony `Prepare()` 略過所有昂貴掛點，不對基準測量造成額外負擔。
+
+2. `-fglStartupExperiment=baseline|xml-sequential|no-sound-prewarm`：
+   - `baseline`（預設）：FGL 既有多執行緒載入與 Core 音效背景預熱。
+   - `xml-sequential`：僅在 FGL 原本會平行解析時，取代其解析為循序執行。沿用原版資料夾覆蓋順序（`XmlFilesInVanillaOrder`）、相對路徑字典、單檔例外容錯、整體失敗 fallback 原版、Hyperdrive Defs 讓出與受保護模組閘門。不改動遊戲原版行為。
+   - `no-sound-prewarm`：僅以 Harmony 跳過 `CoreSoundPrewarmer.Start`，不關閉整體的 `EnableMultiThreading`（貼圖預載與平行 XML 仍照常運作）。
+
+3. `-fglStartupOnly`：
+   純啟動觀測模式。略過 DevTools 測試就緒等待與 `TypeEnumerationCost.Measure()` 的額外反射列舉；精確量測共同起點 timestamp（`ObservationStartTimestamp`，以 `Stopwatch.Frequency` 計量）至首個主選單完成幀、視覺就緒（進入 Sounds 階段）與全部延遲工作完成。無論細部診斷是否開啟，皆維持相同的單調時鐘主選單幀間隔觀察（測量 `Root.Update` 總間隔，包含整幀；持續至主選單出現且全部延遲完成後至少 1.0 秒且至少 2 幀），產出樣本數、起訖、p95 與 max 幀時間。隨後於日誌輸出一行可機器解析的 `[FGL StartupExperiment] { ... }` JSON（基於 `System.Text.Json`），並自動呼叫 `Application.Quit(0)`。此模式不使用 `--test --exit`，且與 `TestRunDriver` 互斥。
+
+4. `-fglAutoLanguageReload`：
+   自動語言重載驗證模式。**前置條件**：啟動參數必須包含 `-savedatafolder` 確保在隔離資料目錄執行；若缺少此旗標會立即以退出碼 1 退出，保護全域 `Prefs.xml`。禁止與 DevTools CLI 過濾參數（如 `--where`, `--test-list`, `--test-plan`）混用。
+   第一輪 DevTools 測試完成後，排程延後至 `Root.Update`、確認 `TestRunner.Active == false` 且舊 runner 完全結束後，才執行 `SelectLanguage("Japanese")` 重載 PlayData；等待第二輪延遲管線就緒後，自動執行同一批 DevTools 測試（禁止呼叫雙重 runner）。結果嚴格要求選定案例數 > 0、兩輪案例數一致、所有案例真正執行結束（`Status.Passed`），排斥 `Pending`、`NotRun`、`Canceled`、`Failed` 及 TestFixture Setup/Teardown 層級失敗。全部完成後還原玩家原始語言設定並儲存，最後依兩輪測試結果以退出碼 0 或 1 退出。
+
+### 測量限制與關鍵邊界
+
+- **音效快取命中認定**：依據最小正確性原則，不作推測性反查 StubResourceCache。由於 StubResourceCache 僅能反映 Lazy 委託是否建立，無法可靠證明是預熱或主緒建立，亦無法比對內部快取鍵，因此明確回報 `cacheHitMeasured: false`。`ContentFinder<AudioClip>.Get` 整體耗時命名為 `mainThreadAudioLookupDuration`（含查找與載入）及計數 `mainThreadAudioLookupCalls`，不宣稱為純主緒等待或已驗證預熱命中。
+- **XML 真實區間與排程成本**：
+  - 區間交集：記錄各批次真實 `[Start, End]` 區間，計算合併聯集後與音效預熱真實區間的精確交集，排除批次間的空檔；若預熱至輸出時仍未結束，標記為 `incomplete: true`。交集僅反映壁鐘重疊區間，不直接等同 OS 執行緒調度競爭。
+  - 跨執行緒 Context：採用 `AsyncLocal` 追蹤批次，確保 `Parallel.For` 各 worker 執行緒繼承同一 batch 統計，支援巢狀調用還原與例外路徑。
+  - 檔案與解析計數：記錄 `expectedFiles`（掃描預期檔案數）、`attemptedFiles`（實際嘗試進入解析數）、`succeededFiles` 與 `failedFiles`。
+  - 排程成本：多 worker 累計 parse ticks 在多核心重疊，不可與 wall duration 直減；將排程成本標記為未量測／估計。
+- **型別查詢形態統計限制**：
+  - 透過 `Priority.First` Prefix 於型別重寫（全名映射）前捕捉原始查詢形態（全名、短名、是否帶命名空間提示），Postfix 僅依據 Prefix state 統計。
+  - `__runOriginal=false` 僅代表原方法被略過，不單獨歸因為 FGL 快取；計數命名為 `originalSkipped`、`resolvedByOriginal` 與 `notFound`。
+- **程序時間與就緒 Clamp**：
+  - 時間起點為開發模組首次初始化 timestamp（`ObservationStartTimestamp`），不宣稱為完整程序啟動時間。
+  - 高精準度就緒於 `StartupTimeline.MarkVisualsReady` 與 `MarkAllReady` 當下即時捕捉；若在主選單出現前已完成，數值 clamp 為 0 並標註 `clampedPreMainMenu: true`。
+
+### 執行範例
+
+```powershell
+# 1. Baseline 啟動時間觀察（關閉細部診斷，取得主選單、延遲就緒時間、主選單幀間隔統計及 JSON）
+RimWorld.exe -fglStartupOnly -fglStartupExperiment=baseline
+
+# 2. 循序 XML 模式比較（啟用細部診斷）
+RimWorld.exe -fglStartupOnly -fglStartupExperiment=xml-sequential -fglStartupDiagnostics
+
+# 3. 停用音效預熱模式比較（啟用細部診斷）
+RimWorld.exe -fglStartupOnly -fglStartupExperiment=no-sound-prewarm -fglStartupDiagnostics
+
+# 4. 自動雙輪語言重載測試（CLI 自動化，必須搭配 -savedatafolder）
+RimWorld.exe -savedatafolder="C:\Temp\RimWorldTestData" --pid Taranchuk.FasterGameLoading.InGameTests --test --exit -fglAutoLanguageReload
+```
