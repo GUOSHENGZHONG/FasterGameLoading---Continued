@@ -13,12 +13,6 @@ namespace FasterGameLoading.InGameTests
     /// 靜態圖集的三個選項：裁切（TrimStaticAtlases）、略過重複紋理（DeduplicateStaticAtlases）、較快的壓縮（FastStaticAtlasCompression）。
     /// 選項關閉時，只檢查該選項的測試直接略過；像素對齊與壓縮兩項不論選項開關都必須成立。
     /// 三條烘焙路徑（原版啟動時、延遲後原版、延遲後自適應）都適用；自適應烘焙中只有一張紋理、直接沿用該紋理的圖集不算烘焙過的圖集。
-    ///
-    /// The three static atlas options: trimming (TrimStaticAtlases), skipping duplicate textures (DeduplicateStaticAtlases)
-    /// and faster compression (FastStaticAtlasCompression). A test that checks only one option returns early when that
-    /// option is off; the pixel-grid and compression tests must hold with the options on or off. All three bake paths
-    /// apply (vanilla at startup, vanilla after delayed loading, adaptive after delayed loading); an adaptive atlas that
-    /// holds a single texture reuses that texture as it is and does not count as baked.
     /// </summary>
     [TestFixture(TestType.Playing)]
     internal sealed class StaticAtlasOptimizationTests
@@ -32,9 +26,6 @@ namespace FasterGameLoading.InGameTests
         /// <summary>
         /// 裁切開啟時，每張圖集在最上方紋理之上，只保留每層 mipmap 一列空白，加上不到一個 GPU 壓縮派送群組的取整餘量。
         /// 同時記下本次載入的圖集總量，方便比較不同設定。
-        ///
-        /// With trimming on, each atlas keeps one empty row per mip level above its top texture, plus less than one GPU
-        /// compression group of rounding. Also logs this load's atlas totals, for comparing settings.
         /// </summary>
         [Test]
         public static void TrimmedAtlasesEndJustAboveTheirTopTexture()
@@ -63,9 +54,6 @@ namespace FasterGameLoading.InGameTests
         /// <summary>
         /// 每張紋理在圖集中的 UV 矩形都落在整數像素上，且不超出圖集。裁切會重新換算矩形，換算出錯時紋理會偏離像素格或被截斷；
         /// 原版的矩形本來就符合。
-        ///
-        /// Every texture's UV rect in its atlas sits on whole pixels and inside the atlas. Trimming recomputes the rects,
-        /// and a wrong conversion moves textures off the pixel grid or cuts them off; vanilla's rects always pass.
         /// </summary>
         [Test]
         public static void AtlasTexturesSitOnWholePixels()
@@ -123,9 +111,6 @@ namespace FasterGameLoading.InGameTests
         /// <summary>
         /// 每個被略過的副本仍能以原本的群組查到，查到的是 Building 圖集，而且不記警告。
         /// 警告記錄涵蓋整個載入過程（quicktest 時包含地圖繪製），不只這裡的查詢。
-        ///
-        /// Every skipped copy is still found under its own group, in a Building atlas, without a warning. The record of
-        /// warned lookups covers the whole load (map drawing included under quicktest), not only the lookups made here.
         /// </summary>
         [Test]
         public static void SkippedCopiesAreFoundInTheBuildingAtlasWithoutWarnings()
@@ -158,9 +143,6 @@ namespace FasterGameLoading.InGameTests
         /// <summary>
         /// 開啟紋理壓縮時（原版預設），每張烘焙過的圖集與遮罩圖集都已是區塊壓縮格式，不論用哪種壓縮品質。
         /// 替換壓縮步驟的補丁若沒有真的壓縮，這裡會失敗。
-        ///
-        /// With texture compression on (vanilla's default), every baked atlas and mask atlas is block-compressed, whichever
-        /// compression quality is used. A patch that replaces the compression step without compressing fails here.
         /// </summary>
         [Test]
         public static void BakedAtlasesAreCompressed()
@@ -201,10 +183,7 @@ namespace FasterGameLoading.InGameTests
                 StaticAtlasDeduplicator.DroppedCopies.Count, FasterGameLoadingSettings.FastStaticAtlasCompression));
         }
 
-        /// <summary>
-        /// 紋理在顯示記憶體中的大小，包含所有 mipmap 層。
-        /// A texture's size in video memory, every mip level included.
-        /// </summary>
+        // 紋理在顯示記憶體中的大小，包含所有 mipmap 層。
         private static long TextureBytes(Texture2D texture)
         {
             if (texture == null) return 0;
@@ -228,10 +207,6 @@ namespace FasterGameLoading.InGameTests
     /// <summary>
     /// 記錄原版 TryGetStaticTile 會記警告的每一次查詢：在要求的群組找不到、改在其他群組的圖集找到，且 ignoreFoundInOtherAtlas 未設定。
     /// 以（紋理, 群組）記錄，不比對警告文字：紋理名稱在不同 mod 之間經常重複。
-    ///
-    /// Records every lookup on which vanilla TryGetStaticTile logs its warning: nothing in the requested group, found in
-    /// another group's atlas, and ignoreFoundInOtherAtlas not set. Records (texture, group) pairs instead of matching the
-    /// warning's text, because texture names often repeat across mods.
     /// </summary>
     [HarmonyPatch(typeof(GlobalTextureAtlasManager), nameof(GlobalTextureAtlasManager.TryGetStaticTile))]
     internal static class CrossGroupLookupProbe

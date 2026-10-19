@@ -16,27 +16,11 @@ namespace FasterGameLoading
     /// 最上方的紋理之上，每一層 mipmap 至少保留一列空白（原尺寸 2^(mips - 1) 列）：
     /// 圖集取樣會環繞，上下邊緣的濾波會讀到另一側，原版圖集在那裡一定有空白列，裁切後也保留。
     /// 打包器會遞迴呼叫自己重試，內層的結果經由外層回傳，因此只在最外層處理一次。
-    ///
-    /// Trims each static atlas to the height it uses.
-    /// Vanilla's packer fills rows upward from uv y = 0 into a power-of-two height and retries at double the
-    /// height when the first attempt does not fit, so every row above the last packed one is empty, and large
-    /// atlases are often half empty; those rows are still read back, mipmapped and compressed.
-    /// After packing, this recreates the colour texture at the height actually used and rescales the returned UV
-    /// rects to it, so no texture moves by a pixel; Bake then draws, masks and builds meshes from those rects.
-    /// The height is rounded up to a multiple of 8 x 2^(mips - 1), so GPU compression covers every mip level,
-    /// and at least one empty row per mip level (2^(mips - 1) rows at full size) is kept above the top
-    /// texture: atlas sampling wraps, so filtering at the top and bottom edges reads the opposite edge, where a
-    /// vanilla atlas always has empty rows, and a trimmed one keeps them.
-    /// The packer calls itself to retry and the inner result returns through the outer call, so only the outermost
-    /// call acts.
     /// </summary>
     [HarmonyPatch(typeof(StaticTextureAtlas), nameof(StaticTextureAtlas.CalcRectsForAtlasNew))]
     public static class StaticTextureAtlas_CalcRectsForAtlasNew_Patch
     {
-        /// <summary>
-        /// 打包器目前的遞迴深度。烘焙只在主執行緒進行。
-        /// The packer's current recursion depth. Baking runs on the main thread only.
-        /// </summary>
+        // 打包器目前的遞迴深度。烘焙只在主執行緒進行。
         private static int depth;
 
         public static void Prefix() => depth++;
@@ -51,10 +35,7 @@ namespace FasterGameLoading
 
         public static void Finalizer() => depth--;
 
-        /// <summary>
-        /// 最上方紋理止於第 <paramref name="usedRows"/> 列時，裁切後的圖集高度。
-        /// The trimmed atlas height when the top texture ends at row <paramref name="usedRows"/>.
-        /// </summary>
+        // 最上方紋理止於第 <paramref name="usedRows"/> 列時，裁切後的圖集高度。
         public static int TrimmedHeight(int usedRows, int mipCount)
         {
             int lastMip = Math.Max(0, mipCount - 1);
@@ -64,11 +45,7 @@ namespace FasterGameLoading
             return (usedRows + keptEmptyRows + step - 1) / step * step;
         }
 
-        /// <summary>
-        /// 把以舊高度正規化的 UV 矩形換算成以新高度正規化，列的位置與高度（以像素計）不變。
-        /// Converts a UV rect normalised to the old height into one normalised to the new height, keeping its rows
-        /// (in pixels) where they were.
-        /// </summary>
+        // 把以舊高度正規化的 UV 矩形換算成以新高度正規化，列的位置與高度（以像素計）不變。
         public static Rect RescaleRows(Rect rect, int oldHeight, int newHeight)
             => new Rect(
                 rect.x,

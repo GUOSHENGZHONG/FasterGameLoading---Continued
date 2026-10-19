@@ -35,22 +35,13 @@ namespace FasterGameLoading
         // 自適應靜態圖集烘焙（預設關閉）
         public static bool StaticAtlasesBaking { get; set; }
 
-        /// <summary>
-        /// 把靜態圖集裁到實際用到的高度（預設開啟）；重新啟動遊戲後生效。
-        /// Trim static atlases to the height they use (on by default); takes effect after restarting the game.
-        /// </summary>
+        // 把靜態圖集裁到實際用到的高度（預設開啟）；重新啟動遊戲後生效。
         public static bool TrimStaticAtlases { get; set; } = true;
 
-        /// <summary>
-        /// 不把也排在 Building 的紋理再烘進 Item 與 Misc 圖集（預設開啟）；重新啟動遊戲後生效。
-        /// Do not bake textures also queued for Building into the Item and Misc atlases (on by default); takes effect after restarting the game.
-        /// </summary>
+        // 不把也排在 Building 的紋理再烘進 Item 與 Misc 圖集（預設開啟）；重新啟動遊戲後生效。
         public static bool DeduplicateStaticAtlases { get; set; } = true;
 
-        /// <summary>
-        /// 以不抖色的標準模式壓縮靜態圖集（預設關閉）；重新啟動遊戲後生效。
-        /// Compress static atlases in the standard mode, without dithering (off by default); takes effect after restarting the game.
-        /// </summary>
+        // 以不抖色的標準模式壓縮靜態圖集（預設關閉）；重新啟動遊戲後生效。
         public static bool FastStaticAtlasCompression { get; set; }
 
         // 啟用多執行緒預載入（預設開啟）

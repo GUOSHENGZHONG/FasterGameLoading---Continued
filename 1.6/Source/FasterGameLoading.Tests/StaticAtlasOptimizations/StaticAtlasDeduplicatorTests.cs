@@ -6,10 +6,7 @@ using Verse;
 
 namespace FasterGameLoading.Tests.StaticAtlasOptimizations
 {
-    /// <summary>
-    /// 以字串代替 Texture2D 測試 <see cref="StaticAtlasDeduplicator.RemoveCopiesOfBuildingTextures{T}"/>。
-    /// Tests <see cref="StaticAtlasDeduplicator.RemoveCopiesOfBuildingTextures{T}"/> with strings in place of Texture2D.
-    /// </summary>
+    // 以字串代替 Texture2D 測試 <see cref="StaticAtlasDeduplicator.RemoveCopiesOfBuildingTextures{T}"/>。
     [TestFixture]
     public class StaticAtlasDeduplicatorTests
     {

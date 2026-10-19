@@ -15,16 +15,6 @@ namespace FasterGameLoading
     /// 藍圖以 Misc 查詢，原版 TryGetStaticTile 在 Misc 找不到時會改搜尋所有圖集，於是找到 Building 那一份。
     /// 因此在烘焙前，從 Item 與 Misc 移除同樣排在 Building、且各群組遮罩狀態一致的紋理，並記下被移除的（紋理, 群組）組合，
     /// 讓 <see cref="GlobalTextureAtlasManager_TryGetStaticTile_Patch"/> 對這些組合不發出「在其他圖集群組找到」的警告。
-    ///
-    /// Skips duplicate textures in the static atlases.
-    /// ThingDef.PostLoad queues a minifiable building's graphic in both the Building and the Item group, and its
-    /// blueprint def queues the same texture in Misc, so the texture is baked three times. A minified building looks
-    /// its graphic up under the inner building's category, Building, and never reads the Item copy; a blueprint looks
-    /// it up under Misc, and when vanilla TryGetStaticTile finds nothing there it searches every atlas and finds the
-    /// Building copy. Item and Misc entries also queued for Building are removed only when mask states are consistent,
-    /// and the removed (texture, group) pairs are recorded so that
-    /// <see cref="GlobalTextureAtlasManager_TryGetStaticTile_Patch"/> keeps vanilla's "found in another atlas group"
-    /// warning quiet for them.
     /// </summary>
     public static class StaticAtlasDeduplicator
     {
@@ -45,26 +35,16 @@ namespace FasterGameLoading
             SessionLifecycle.On(LifecyclePhase.LanguageReloading, static () => droppedCopies.Clear());
         }
 
-        /// <summary>
-        /// 本次載入從建置佇列移除的（紋理, 群組）組合。
-        /// The (texture, group) pairs removed from the build queue in this load.
-        /// </summary>
+        // 本次載入從建置佇列移除的（紋理, 群組）組合。
         public static IReadOnlyCollection<(Texture2D texture, TextureAtlasGroup group)> DroppedCopies => droppedCopies;
 
-        /// <summary>
-        /// 這個組合是否在烘焙前被移除。
-        /// Whether this pair was removed before the bake.
-        /// </summary>
+        // 這個組合是否在烘焙前被移除。
         public static bool IsDroppedCopy(Texture2D texture, TextureAtlasGroup group)
             => droppedCopies.Count > 0 && droppedCopies.Contains((texture, group));
 
         /// <summary>
         /// 在確定會執行的烘焙之前呼叫：原版烘焙由 <see cref="GlobalTextureAtlasManager_BakeStaticAtlases_DeduplicatePatch"/> 呼叫，
         /// 自適應烘焙由 <see cref="AdaptiveAtlasBaker"/> 呼叫。重複呼叫是安全的，第二次不會再找到重複項目。
-        ///
-        /// Called just before a bake that will run: by <see cref="GlobalTextureAtlasManager_BakeStaticAtlases_DeduplicatePatch"/>
-        /// for vanilla's bake, and by <see cref="AdaptiveAtlasBaker"/> for the adaptive bake. Calling it again is safe;
-        /// the second call finds nothing left to remove.
         /// </summary>
         public static void RemoveDuplicateCopies()
         {
@@ -94,12 +74,6 @@ namespace FasterGameLoading
         /// 若任一群組有同主紋理但不同遮罩狀態，保留副本；原版跨群組查詢不比對遮罩狀態。
         /// 其餘項目在各群組中的順序不變；移除後變空的群組整個刪除（原版不會有空群組，會試著用它烘焙一張空圖集）。
         /// 以泛型實作，單元測試因此不必建立 Texture2D。
-        ///
-        /// Removes from the Item and Misc groups the entries that are also queued in the Building group with the same
-        /// mask state and no conflicting mask states in other groups, and returns the removed pairs.
-        /// The remaining entries keep their order within each group; a group
-        /// left empty is removed (vanilla never has an empty group, and would try to bake an empty atlas from one).
-        /// Generic so that unit tests need no Texture2D.
         /// </summary>
         internal static List<(T item, TextureAtlasGroup group)> RemoveCopiesOfBuildingTextures<T>(
             Dictionary<TextureAtlasGroupKey, (List<T>, HashSet<T>)> queue)

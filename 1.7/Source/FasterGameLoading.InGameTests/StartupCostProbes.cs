@@ -15,9 +15,7 @@ using Verse;
 
 namespace FasterGameLoading.InGameTests
 {
-    /// <summary>
-    /// 比較不同 FGL 版本用的啟動成本量測，結果寫進第 1 輪的 timing log。
-    /// </summary>
+    // 比較不同 FGL 版本用的啟動成本量測，結果寫進第 1 輪的 timing log。
     [HarmonyPatch(typeof(FilesystemFile), nameof(FilesystemFile.ReadAllBytes))]
     internal static class MainThreadFileReadProbe
     {

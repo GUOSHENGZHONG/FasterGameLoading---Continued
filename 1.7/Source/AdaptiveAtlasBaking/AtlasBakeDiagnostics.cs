@@ -12,9 +12,9 @@ namespace FasterGameLoading;
 /// 靜態圖集烘焙的純診斷工具。
 ///
 /// 動機：原版 <see cref="StaticTextureAtlas"/>.BuildMaskAtlas 以
-/// <c>Graphics.CopyTexture</c> 把各來源 mask 貼圖搬進 mask 圖集。當某張 mask 的
+/// <see cref="UnityEngine.Graphics.CopyTexture(UnityEngine.Texture, UnityEngine.Texture)"/> 把各來源 mask 貼圖搬進 mask 圖集。當某張 mask 的
 /// 尺寸與其對應 main 貼圖不符（兩者佔同一 UV rect，尺寸必須一致），或 mask 為
-/// null / GPU 資料無效時，<c>CopyTexture</c> 會在原生層直接 Access Violation 硬崩潰
+/// null / GPU 資料無效時，<see cref="UnityEngine.Graphics.CopyTexture(UnityEngine.Texture, UnityEngine.Texture)"/> 會在原生層直接 Access Violation 硬崩潰
 /// ——這是 C# try/catch 接不到的，因此唯一能做的是「在烘焙前先把可疑貼圖印出來」，
 /// 方便鎖定肇事模組。
 ///

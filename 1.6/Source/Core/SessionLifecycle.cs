@@ -75,7 +75,7 @@ namespace FasterGameLoading
 
             public readonly LifecyclePhase Phase;
             // 只用 Wait／Set、從不存取 WaitHandle，不會配置核心物件，因此不需 Dispose
-            //（主執行緒 Set 之後等待端才醒來，此時 Dispose 反而可能與 Set 的收尾競爭）。
+            // （主執行緒 Set 之後等待端才醒來，此時 Dispose 反而可能與 Set 的收尾競爭）。
             public readonly ManualResetEventSlim Done = new ManualResetEventSlim(initialState: false);
             private int state;
 
