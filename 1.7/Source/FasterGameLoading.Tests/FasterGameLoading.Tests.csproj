@@ -9,6 +9,11 @@
     <Deterministic>true</Deterministic>
     <DebugType>portable</DebugType>
     <NoWarn>NU1701;NU1702;SYSLIB0050;SYSLIB0012</NoWarn>
+    <!-- 以 Microsoft.Testing.Platform 執行測試：NUnit3TestAdapter 6.x 以此屬性改用 MTP 模式。
+         MTP 會先執行測試組件的進入點，再進行探索，讓 TestSetup 的 module initializer
+         有機會註冊組件解析器；VSTest 模式則在探索階段直接反射組件，導致 RimWorld
+         managed 組件尚未能解析而找不到任何測試。 -->
+    <EnableNUnitRunner>true</EnableNUnitRunner>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +31,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FasterGameLoading.csproj" />
+  </ItemGroup>
+
+  <!-- 將 RimWorld 安裝目錄嵌入組件 metadata，讓 TestSetup 的組件解析器在未設定
+       RIMWORLD_MANAGED_DIR 環境變數時仍能找到遊戲 managed 組件（Assembly-CSharp.dll 等）。 -->
+  <ItemGroup>
+    <AssemblyMetadata Include="RimWorldDir" Value="$(RimWorldDir)" />
   </ItemGroup>
 
   <ItemGroup>

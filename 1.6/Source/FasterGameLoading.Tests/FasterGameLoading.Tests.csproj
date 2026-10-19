@@ -7,6 +7,12 @@
     <Deterministic>true</Deterministic>
     <DebugType>portable</DebugType>
     <NoWarn>NU1701;NU1702;SYSLIB0050;SYSLIB0012</NoWarn>
+    <RimWorldDir>$(MSBuildThisFileDirectory)..\..\..\..\..\</RimWorldDir>
+    <!-- 以 Microsoft.Testing.Platform 執行測試：NUnit3TestAdapter 6.x 以此屬性改用 MTP 模式。
+         MTP 會先執行測試組件的進入點，再進行探索，讓 TestSetup 的 module initializer
+         有機會註冊組件解析器；VSTest 模式則在探索階段直接反射組件，導致 RimWorld
+         managed 組件尚未能解析而找不到任何測試。 -->
+    <EnableNUnitRunner>true</EnableNUnitRunner>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,10 +33,21 @@
     <ProjectReference Include="..\FasterGameLoading.csproj" />
   </ItemGroup>
 
-  <Target Name="CopyRimWorldManagedAssemblies" AfterTargets="Build">
+  <!-- 將 RimWorld 安裝目錄嵌入組件 metadata，讓 TestSetup 的組件解析器在未設定
+       RIMWORLD_MANAGED_DIR 環境變數時仍能找到遊戲 managed 組件（Assembly-CSharp.dll 等）。 -->
+  <ItemGroup>
+    <AssemblyMetadata Include="RimWorldDir" Value="$(RimWorldDir)" />
+  </ItemGroup>
+
+  <!-- 將 RimWorld 1.6 的 managed 組件複製到測試輸出目錄，讓測試在探索階段即可解析組件。
+       若本機未安裝 1.6 版 RimWorld 則略過（此時需靠 TestSetup 的組件解析器於執行期載入）。 -->
+  <Target Name="CopyRimWorldManagedAssemblies" AfterTargets="Build" Condition="Exists('$(RimWorldDir)RimWorldWin64_Data\Managed')">
     <ItemGroup>
-      <ManagedAssemblies Include="c:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\*.dll" />
+      <ManagedAssemblies Include="$(RimWorldDir)RimWorldWin64_Data\Managed\*.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(ManagedAssemblies)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="WarnMissingRimWorldManagedAssemblies" AfterTargets="Build" Condition="!Exists('$(RimWorldDir)RimWorldWin64_Data\Managed')">
+    <Warning Text="未找到 RimWorld 1.6 的 managed 組件目錄（$(RimWorldDir)RimWorldWin64_Data\Managed），略過複製到測試輸出目錄。測試將改由 TestSetup 的組件解析器於執行期載入；若找不到測試案例，請確認本機是否安裝了 RimWorld 1.6。" />
   </Target>
 </Project>

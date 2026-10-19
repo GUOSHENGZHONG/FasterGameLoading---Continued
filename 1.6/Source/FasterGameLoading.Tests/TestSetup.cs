@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 #pragma warning disable MA0148, MA0002, MA0003, MA0016, MA0051, MA0106, MA0134, MA0032, MA0039, S3776, S3267, S3398, S108, S2486, S2701
 using System.IO;
 using System.Reflection;
@@ -19,14 +20,33 @@ namespace FasterGameLoading.Tests
         [System.Runtime.CompilerServices.ModuleInitializer]
         internal static void ModuleInit()
         {
-            RegisterResolver();
-            ApplyGlobalPatches();
+            Initialize();
         }
 
         static TestSetup()
         {
-            RegisterResolver();
-            ApplyGlobalPatches();
+            Initialize();
+        }
+
+        /// <summary>
+        /// 註冊組件解析器並套用 headless 測試環境的全域 Harmony patch。
+        /// 整個流程以 try/catch 包覆：本機若缺少 RimWorld 安裝，應讓個別測試以明確錯誤失敗，
+        /// 而非讓模組初始化例外中斷整個測試組件的載入（否則 NUnit 只會回報「找不到任何測試」）。
+        /// </summary>
+        private static void Initialize()
+        {
+            try
+            {
+                RegisterResolver();
+                ApplyGlobalPatches();
+            }
+            catch (Exception ex)
+            {
+                // AssemblyLoadContext.Resolving 事件處理常式必須同步回傳，無法改用非同步輸出
+    #pragma warning disable MA0045
+                Console.WriteLine("[TestSetup] 初始化失敗：" + ex.GetType().Name + ": " + ex.Message);
+    #pragma warning restore MA0045
+            }
         }
 
         [OneTimeSetUp]
@@ -311,12 +331,66 @@ namespace FasterGameLoading.Tests
             return false;
         }
 
+        /// <summary>
+        /// 取得可載入 RimWorld 執行期組件的本機目錄候選清單。
+        /// 優先序：環境變數 RIMWORLD_MANAGED_DIR → 建置時期嵌入的遊戲安裝目錄（RimWorldDir）→ 預設 Steam 安裝路徑。
+        /// RimWorld 1.7 的 managed 組件位於安裝根目錄，1.6 則位於 RimWorldWin64_Data\Managed，兩者皆列入以相容不同版本。
+        /// </summary>
+        private static IReadOnlyList<string> ResolveSearchDirectories()
+        {
+            var dirs = new List<string>();
+
+            void AddDirectory(string directory)
+            {
+                if (string.IsNullOrWhiteSpace(directory)) return;
+                var trimmed = directory.TrimEnd('\\', '/');
+                foreach (var existing in dirs)
+                {
+                    if (string.Equals(existing, trimmed, StringComparison.OrdinalIgnoreCase)) return;
+                }
+                dirs.Add(trimmed);
+            }
+
+            AddDirectory(Environment.GetEnvironmentVariable("RIMWORLD_MANAGED_DIR"));
+
+            var installDir = EmbeddedRimWorldDir();
+            AddDirectory(installDir);
+            if (!string.IsNullOrEmpty(installDir))
+            {
+                AddDirectory(Path.Combine(installDir, "RimWorldWin64_Data", "Managed"));
+            }
+
+            const string defaultInstallDir = @"c:\Program Files (x86)\Steam\steamapps\common\RimWorld";
+            AddDirectory(defaultInstallDir);
+            AddDirectory(Path.Combine(defaultInstallDir, "RimWorldWin64_Data", "Managed"));
+
+            return dirs;
+        }
+
+        /// <summary>
+        /// 讀取建置時期由 csproj 以 AssemblyMetadata 嵌入的 RimWorld 安裝目錄，
+        /// 使測試在未設定 RIMWORLD_MANAGED_DIR 環境變數時仍能載入遊戲 managed 組件。
+        /// </summary>
+        private static string EmbeddedRimWorldDir()
+        {
+            foreach (var attribute in typeof(TestSetup).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>())
+            {
+                if (string.Equals(attribute.Key, "RimWorldDir", StringComparison.Ordinal))
+                {
+                    return attribute.Value;
+                }
+            }
+            return null;
+        }
+
         private static void RegisterResolver()
         {
             if (registered) return;
             registered = true;
 
-#if NETCOREAPP || NET5_0_OR_GREATER
+            var searchDirs = ResolveSearchDirectories();
+
+    #if NETCOREAPP || NET5_0_OR_GREATER
             System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += (context, assemblyName) =>
             {
                 var name = assemblyName.Name;
@@ -326,6 +400,7 @@ namespace FasterGameLoading.Tests
                     return null;
                 }
 
+                // 優先從測試組件所在目錄載入相依組件（確保被覆蓋率工具插樁的組件正確載入）
                 var testDir = Path.GetDirectoryName(typeof(TestSetup).Assembly.Location)
                     ?? AppDomain.CurrentDomain.BaseDirectory;
                 var localPath = Path.Combine(testDir, name + ".dll");
@@ -338,18 +413,16 @@ namespace FasterGameLoading.Tests
                     catch (Exception ex)
                     {
                         // AssemblyLoadContext.Resolving 事件處理常式必須同步回傳，無法改用非同步輸出
-#pragma warning disable MA0045
+    #pragma warning disable MA0045
                         TestContext.Progress.WriteLine($"Assembly load failed for local '{localPath}': {ex}");
-#pragma warning restore MA0045
+    #pragma warning restore MA0045
                     }
                 }
 
-                var managedDir = Environment.GetEnvironmentVariable("RIMWORLD_MANAGED_DIR")
-                    ?? @"c:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed";
-                var path = Path.Combine(managedDir, name + ".dll");
-
-                if (File.Exists(path))
+                foreach (var dir in searchDirs)
                 {
+                    var path = Path.Combine(dir, name + ".dll");
+                    if (!File.Exists(path)) continue;
                     try
                     {
                         return context.LoadFromAssemblyPath(path);
@@ -357,19 +430,19 @@ namespace FasterGameLoading.Tests
                     catch (Exception ex)
                     {
                         // AssemblyLoadContext.Resolving 事件處理常式必須同步回傳，無法改用非同步輸出
-#pragma warning disable MA0045
+    #pragma warning disable MA0045
                         TestContext.Progress.WriteLine($"Assembly load failed for '{path}': {ex}");
-#pragma warning restore MA0045
+    #pragma warning restore MA0045
                     }
                 }
                 return null;
             };
-#endif
+    #endif
 
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
             {
                 var assemblyName = new AssemblyName(args.Name).Name;
-
+                if (assemblyName == null) return null;
                 if (assemblyName.StartsWith("System", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(assemblyName, "mscorlib", StringComparison.OrdinalIgnoreCase))
                 {
@@ -389,35 +462,30 @@ namespace FasterGameLoading.Tests
                     catch (Exception ex)
                     {
                         // AppDomain.AssemblyResolve 事件處理常式必須同步回傳，無法改用非同步輸出
-#pragma warning disable MA0045
+    #pragma warning disable MA0045
                         TestContext.Progress.WriteLine(
                             $"Assembly load failed for local dependency '{localPath}': {ex}");
-#pragma warning restore MA0045
+    #pragma warning restore MA0045
                     }
                 }
 
-                // 本地 RimWorld Managed 檔案夾路徑；可透過環境變數 RIMWORLD_MANAGED_DIR 覆寫，
-                // 方便在不同機器或 CI 環境中執行測試而不需修改程式碼。
-
-                var managedDir = Environment.GetEnvironmentVariable("RIMWORLD_MANAGED_DIR")
-                    ?? @"c:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed";
-                var path = Path.Combine(managedDir, assemblyName + ".dll");
-
-                if (File.Exists(path))
+                foreach (var dir in searchDirs)
                 {
+                    var path = Path.Combine(dir, assemblyName + ".dll");
+                    if (!File.Exists(path)) continue;
                     try
                     {
                         return Assembly.LoadFrom(path);
                     }
                     catch (Exception ex)
                     {
-                        TestContext.Progress.WriteLine(
-                            $"Assembly load failed for '{path}': {ex}");
+                        TestContext.Progress.WriteLine($"Assembly load failed for '{path}': {ex}");
                     }
                 }
                 return null;
             };
         }
+
     }
 }
 #pragma warning restore MA0148, MA0002, MA0003, MA0016, MA0051, MA0106, MA0134, MA0032, MA0039, S3776, S3267, S3398, S108, S2486, S2701
