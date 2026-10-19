@@ -11,6 +11,7 @@
     <RootNamespace>FasterGameLoading.InGameTests</RootNamespace>
     <AssemblyName>FasterGameLoading.InGameTests</AssemblyName>
     <LangVersion>latest</LangVersion>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <OutputPath>Mod\Assemblies\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <DebugType>portable</DebugType>

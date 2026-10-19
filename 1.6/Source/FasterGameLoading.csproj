@@ -54,7 +54,9 @@
   <PropertyGroup>
     <!-- Disable automatic generation of assembly attributes -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <EnableNETAnalyzers>False</EnableNETAnalyzers>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <!-- .editorconfig 的 MA0182 設定不涵蓋 NuGet 套件目錄中的 Publicizer 原始碼。 -->
+    <NoWarn>$(NoWarn);MA0182</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Publicize Include="Assembly-CSharp" />
