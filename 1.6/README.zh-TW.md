@@ -129,8 +129,10 @@ graph TD
 dotnet build 1.6/Source/FasterGameLoading.csproj -c Release
 ```
 
-測試使用 .NET 9 上的 NUnit：
+測試使用 .NET 9 上的 NUnit，改以 Microsoft.Testing.Platform 執行：
 
 ```bash
-dotnet test 1.6/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj --settings test.runsettings
+dotnet test 1.6/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj
 ```
+
+`global.json` 會啟用 Microsoft.Testing.Platform 的 `dotnet test` 體驗，請在儲存庫根目錄或 `1.6/Source/` 執行上述指令。這個平台是必要的：它會先執行測試組件的進入點再進行探索，`TestSetup` 才能在探索前註冊組件解析器，於執行期載入遊戲的 `Assembly-CSharp.dll` 與 `UnityStubs.dll`。VSTest 路徑則是在任何測試程式碼執行前就直接反射測試組件，找不到測試並回報「NUnit couldn't find any tests」。

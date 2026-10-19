@@ -129,8 +129,10 @@ The 1.6 build targets .NET Framework 4.7.2 and references RimWorld via the [Kraf
 dotnet build 1.6/Source/FasterGameLoading.csproj -c Release
 ```
 
-Tests use NUnit on .NET 9:
+Tests use NUnit on .NET 9, run through Microsoft.Testing.Platform:
 
 ```bash
-dotnet test 1.6/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj --settings test.runsettings
+dotnet test 1.6/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj
 ```
+
+`global.json` opts into the Microsoft.Testing.Platform `dotnet test` experience, so run the command from the repository root or from `1.6/Source/`. The platform needs it: it runs the test assembly's entry point before discovery, which is what lets `TestSetup` register the assembly resolver that loads the game's `Assembly-CSharp.dll` and `UnityStubs.dll` at run time. The VSTest path reflects over the test assembly before any of that code runs, finds no tests, and reports "NUnit couldn't find any tests".

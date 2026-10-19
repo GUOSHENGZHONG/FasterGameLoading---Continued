@@ -156,10 +156,12 @@ The 1.7 build targets .NET 10 and is written with current C# language features a
 dotnet build 1.7/Source/FasterGameLoading.csproj -c Release
 ```
 
-Tests use NUnit on .NET 10:
+Tests use NUnit on .NET 10, run through Microsoft.Testing.Platform:
 
 ```bash
-dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj --settings test.runsettings
+dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj
 ```
+
+`global.json` opts into the Microsoft.Testing.Platform `dotnet test` experience, so run the command from the repository root or from `1.7/Source/`. The platform needs it: it runs the test assembly's entry point before discovery, which is what lets `TestSetup` register the assembly resolver that loads the game's `Assembly-CSharp.dll` and `UnityStubs.dll` at run time. The VSTest path reflects over the test assembly before any of that code runs, finds no tests, and reports "NUnit couldn't find any tests". The `Krafs.Rimworld.Ref` package only carries reference assemblies, so those game assemblies are not in the test output folder and have to be resolved from the local RimWorld installation at run time.
 
 In-game integration tests and type-lookup benchmarks use a pinned DevTools build in a separate development-only mod. See the [in-game test guide](Source/FasterGameLoading.InGameTests/README.md) for setup, Test Explorer, Smoke Test, and test scenarios. The player-facing `1.7/Assemblies/` does not require DevTools. The NUnit suite continues to use the `dotnet test` command above. RimWorld 1.6 does not integrate DevTools.
