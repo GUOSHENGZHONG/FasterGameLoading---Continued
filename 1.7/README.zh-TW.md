@@ -150,7 +150,7 @@ graph TD
 
 1.7 的原始碼位於 `1.7/Source/`，建置後的 DLL 輸出到 `1.7/Assemblies/`。它最初複製自 1.6 的原始碼，之後分開維護；功能資料夾與 1.6 相同（`Core/`、`Settings/`、`XMLLoadingCache/`、`EarlyModContentLoading/`、`TextureDownscaler/`、`AdaptiveAtlasBaking/`、`StaticAtlasOptimizations/`、`DelayGraphicAndIconLoading/`、`DelaySoundLoading/`、`Compatibility/`、`Language/` 與 `Utilities/`），NUnit 測試位於 `FasterGameLoading.Tests/`。
 
-1.7 版以 .NET 10 為目標，使用目前的 C# 語言功能與 .NET 10 API 撰寫，所以無法為 1.6 編譯。RimWorld 1.7 目前還沒有參考套件，因此它直接參考本儲存庫所在的 RimWorld 1.7 安裝（`Assembly-CSharp.dll`、`UnityStubs.dll`、`Waylith.dll`），以及 Harmony 工作坊項目中的 1.7 版 `0Harmony.dll`。請在儲存庫根目錄執行：
+1.7 版以 .NET 10 為目標，使用目前的 C# 語言功能與 .NET 10 API 撰寫，所以無法為 1.6 編譯。RimWorld 1.7 現在提供 `Krafs.Rimworld.Ref` NuGet 參考套件（1.7.4982-unstable），因此建置遊戲組件（`Assembly-CSharp.dll`、`UnityStubs.dll`、`Waylith.dll` 等）不再需要本機的 RimWorld 安裝；只有 Harmony 工作坊項目中的 1.7 版 `0Harmony.dll` 仍直接參考。請在儲存庫根目錄執行：
 
 ```bash
 dotnet build 1.7/Source/FasterGameLoading.csproj -c Release

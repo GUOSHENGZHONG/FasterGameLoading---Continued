@@ -150,7 +150,7 @@ If loading is still slow:
 
 The 1.7 source lives in `1.7/Source/` and the build writes its DLL to `1.7/Assemblies/`. It started as a copy of the 1.6 source and is maintained separately; feature folders are the same as in 1.6 (`Core/`, `Settings/`, `XMLLoadingCache/`, `EarlyModContentLoading/`, `TextureDownscaler/`, `AdaptiveAtlasBaking/`, `StaticAtlasOptimizations/`, `DelayGraphicAndIconLoading/`, `DelaySoundLoading/`, `Compatibility/`, `Language/` and `Utilities/`), with NUnit tests in `FasterGameLoading.Tests/`.
 
-The 1.7 build targets .NET 10 and is written with current C# language features and .NET 10 APIs, so it does not compile for 1.6. RimWorld 1.7 has no reference package yet, so it references the RimWorld 1.7 installation this repository sits in (`Assembly-CSharp.dll`, `UnityStubs.dll`, `Waylith.dll`) and the 1.7 `0Harmony.dll` from the Harmony Workshop item. Run these from the repository root:
+The 1.7 build targets .NET 10 and is written with current C# language features and .NET 10 APIs, so it does not compile for 1.6. RimWorld 1.7 now ships the `Krafs.Rimworld.Ref` NuGet reference package (1.7.4982-unstable), so the build no longer needs a local RimWorld installation for the game assemblies (`Assembly-CSharp.dll`, `UnityStubs.dll`, `Waylith.dll` and friends); only the 1.7 `0Harmony.dll` from the Harmony Workshop item is still referenced directly. Run these from the repository root:
 
 ```bash
 dotnet build 1.7/Source/FasterGameLoading.csproj -c Release

@@ -26,20 +26,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <DebugType>portable</DebugType>
   </PropertyGroup>
-  <!-- 1.7 沒有 NuGet 參考套件：直接參考遊戲根目錄的組件，以及 Harmony 工作坊版的 1.7 組件。 -->
+  <!-- 1.7 改用 Krafs.Rimworld.Ref NuGet 套件提供遊戲參考組件；Harmony 仍參考工作坊版的 1.7 組件。 -->
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>$(RimWorldDir)Assembly-CSharp.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityStubs">
-      <HintPath>$(RimWorldDir)UnityStubs.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Waylith">
-      <HintPath>$(RimWorldDir)Waylith.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+    <PackageReference Include="Krafs.Rimworld.Ref" />
     <Reference Include="0Harmony">
       <HintPath>$(WorkshopDir)2009463077\1.7\Assemblies\0Harmony.dll</HintPath>
       <Private>false</Private>
