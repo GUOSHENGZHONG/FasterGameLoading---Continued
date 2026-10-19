@@ -38,20 +38,13 @@
   </ItemGroup>
 
   <!-- 將 RimWorld 安裝目錄嵌入組件 metadata，讓 TestSetup 的組件解析器在未設定
-       RIMWORLD_MANAGED_DIR 環境變數時仍能找到遊戲 managed 組件（Assembly-CSharp.dll 等）。 -->
+       RIMWORLD_MANAGED_DIR 環境變數時仍能找到遊戲 managed 組件（Assembly-CSharp.dll 等）。
+       刻意不把遊戲組件複製到測試輸出目錄：1.6 的 managed 目錄含 .NET Framework 版的
+       mscorlib.dll 與 System.dll，複製過去會遮蔽 .NET 9/10 的 BCL 而使測試組件無法載入。 -->
   <ItemGroup>
     <AssemblyMetadata Include="RimWorldDir" Value="$(RimWorldDir)" />
+    <!-- 遊戲組件 Assembly-CSharp.dll 的次要版本即 RimWorld 版本（1.6 為 1.6.x），
+         測試時用來拒絕載入另一個 RimWorld 版本的組件。 -->
+    <AssemblyMetadata Include="RimWorldMinorVersion" Value="6" />
   </ItemGroup>
-
-  <!-- 將 RimWorld 1.6 的 managed 組件複製到測試輸出目錄，讓測試在探索階段即可解析組件。
-       若本機未安裝 1.6 版 RimWorld 則略過（此時需靠 TestSetup 的組件解析器於執行期載入）。 -->
-  <Target Name="CopyRimWorldManagedAssemblies" AfterTargets="Build" Condition="Exists('$(RimWorldDir)RimWorldWin64_Data\Managed')">
-    <ItemGroup>
-      <ManagedAssemblies Include="$(RimWorldDir)RimWorldWin64_Data\Managed\*.dll" />
-    </ItemGroup>
-    <Copy SourceFiles="@(ManagedAssemblies)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
-  </Target>
-  <Target Name="WarnMissingRimWorldManagedAssemblies" AfterTargets="Build" Condition="!Exists('$(RimWorldDir)RimWorldWin64_Data\Managed')">
-    <Warning Text="未找到 RimWorld 1.6 的 managed 組件目錄（$(RimWorldDir)RimWorldWin64_Data\Managed），略過複製到測試輸出目錄。測試將改由 TestSetup 的組件解析器於執行期載入；若找不到測試案例，請確認本機是否安裝了 RimWorld 1.6。" />
-  </Target>
 </Project>

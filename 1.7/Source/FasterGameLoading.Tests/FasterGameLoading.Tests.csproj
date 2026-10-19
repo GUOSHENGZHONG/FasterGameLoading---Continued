@@ -37,6 +37,9 @@
        RIMWORLD_MANAGED_DIR 環境變數時仍能找到遊戲 managed 組件（Assembly-CSharp.dll 等）。 -->
   <ItemGroup>
     <AssemblyMetadata Include="RimWorldDir" Value="$(RimWorldDir)" />
+    <!-- 遊戲組件 Assembly-CSharp.dll 的次要版本即 RimWorld 版本（1.7 為 1.7.x），
+         測試時用來拒絕載入另一個 RimWorld 版本的組件。 -->
+    <AssemblyMetadata Include="RimWorldMinorVersion" Value="7" />
   </ItemGroup>
 
   <ItemGroup>

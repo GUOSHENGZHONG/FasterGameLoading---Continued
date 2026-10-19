@@ -322,9 +322,11 @@ public class TestSetup
     }
 
     /// <summary>
-    /// 取得可載入 RimWorld 執行期組件的本機目錄候選清單。
-    /// 優先序：環境變數 RIMWORLD_MANAGED_DIR → 建置時期嵌入的遊戲安裝目錄（RimWorldDir）→ 預設 Steam 安裝路徑。
-    /// RimWorld 1.7 的 managed 組件位於安裝根目錄，1.6 則位於 RimWorldWin64_Data\Managed，兩者皆列入以相容不同版本。
+    /// 取得可載入 RimWorld 1.7 執行期組件的本機目錄候選清單。
+    /// 優先序：環境變數 RIMWORLD_MANAGED_DIR → 建置時期嵌入的遊戲安裝目錄 → 預設 Steam 安裝路徑。
+    /// RimWorld 1.7 的 managed 組件（Assembly-CSharp.dll、UnityStubs.dll 等）位於安裝根目錄。
+    /// 版本相符由 <see cref="IsCompatibleGameAssembly"/> 檢查：RimWorld 1.6 與 1.7 共用同一個
+    /// Steam 安裝目錄，若誤載 1.6 的 Assembly-CSharp 會讓測試以另一個版本通過而掩蓋問題。
     /// </summary>
     private static IReadOnlyList<string> ResolveSearchDirectories()
     {
@@ -343,18 +345,52 @@ public class TestSetup
 
         AddDirectory(Environment.GetEnvironmentVariable("RIMWORLD_MANAGED_DIR"));
 
-        var installDir = EmbeddedRimWorldDir();
-        AddDirectory(installDir);
-        if (!string.IsNullOrEmpty(installDir))
-        {
-            AddDirectory(Path.Combine(installDir, "RimWorldWin64_Data", "Managed"));
-        }
+        AddDirectory(EmbeddedRimWorldDir());
 
         const string defaultInstallDir = @"c:\Program Files (x86)\Steam\steamapps\common\RimWorld";
         AddDirectory(defaultInstallDir);
-        AddDirectory(Path.Combine(defaultInstallDir, "RimWorldWin64_Data", "Managed"));
 
         return dirs;
+    }
+
+    /// <summary>
+    /// 檢查候選的遊戲組件是否與測試目標的 RimWorld 版本相符。
+    /// 僅遊戲主組件 Assembly-CSharp.dll 的版本編碼 RimWorld 版本（1.6 為 1.6.x、1.7 為 1.7.x）；
+    /// 其餘組件各有自己的版本規則（多數 Unity 模組為 0.0.0.0，Brutal.* 為日期版本），
+    /// 無法據以判斷 RimWorld 版本，一律接受。
+    /// </summary>
+    private static bool IsCompatibleGameAssembly(string path)
+    {
+        if (!string.Equals(Path.GetFileName(path), "Assembly-CSharp.dll", StringComparison.OrdinalIgnoreCase)) return true;
+
+        var expected = ExpectedRimWorldMinorVersion();
+        if (expected <= 0) return true;
+        try
+        {
+            var version = AssemblyName.GetAssemblyName(path).Version;
+            if (version == null || version.Minor == 0) return true;
+            return version.Minor == expected;
+        }
+        catch (Exception)
+        {
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// 讀取建置時期由 csproj 以 AssemblyMetadata 嵌入的 RimWorld 次要版本。
+    /// </summary>
+    private static int ExpectedRimWorldMinorVersion()
+    {
+        foreach (var attribute in typeof(TestSetup).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>())
+        {
+            if (string.Equals(attribute.Key, "RimWorldMinorVersion", StringComparison.Ordinal)
+                && int.TryParse(attribute.Value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var minor))
+            {
+                return minor;
+            }
+        }
+        return 0;
     }
 
     /// <summary>
@@ -413,6 +449,7 @@ public class TestSetup
             {
                 var path = Path.Combine(dir, name + ".dll");
                 if (!File.Exists(path)) continue;
+                if (!IsCompatibleGameAssembly(path)) continue;
                 try
                 {
                     return context.LoadFromAssemblyPath(path);
@@ -463,6 +500,7 @@ public class TestSetup
             {
                 var path = Path.Combine(dir, assemblyName + ".dll");
                 if (!File.Exists(path)) continue;
+                if (!IsCompatibleGameAssembly(path)) continue;
                 try
                 {
                     return Assembly.LoadFrom(path);
