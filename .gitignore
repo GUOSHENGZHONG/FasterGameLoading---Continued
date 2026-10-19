@@ -27,9 +27,8 @@ obj/
 *.tmp
 .test-temp/
 
-# 測試與掃描產物
+# 測試產物
 TestResults/
-.sonarqube/
 coverage.xml
 *.coverage
 

@@ -163,7 +163,7 @@ public class TextureCacheManagerLifecycleTests
     /// <summary>
     /// 快取檔名是 UTF-8 鍵的 SHA-256 小寫十六進位；數值固定寫死，確保實作改動後
     /// 使用者磁碟上既有的降質快取仍能命中。涵蓋 ASCII 與非 ASCII 鍵。
-    /// 2026-10-17 由 MD5 改為 SHA-256（SonarAnalyzer S4790）：改動前產生的快取檔名不再命中，
+    /// 2026-10-17 由 MD5 改為 SHA-256（強雜湊要求）：改動前產生的快取檔名不再命中，
     /// 那些檔案會被重建流程淘汰，並在下次載入時重新降質一次。
     /// </summary>
     [TestCase("C:/nonexistent/FGL/pin/Textures/Things/Item/Foo_south.png", "b229f9602787b103f0677ef8786aa602dc8d23e07f490da2fbeea65e61833ae2")]

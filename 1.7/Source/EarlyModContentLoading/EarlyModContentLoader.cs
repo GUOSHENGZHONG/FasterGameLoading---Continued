@@ -22,7 +22,7 @@ public class EarlyModContentLoader
     // 運行時遊戲 DLL 中的 Harmony 攔截 (ModContentPack_ReloadContentInt_Patch) 對反射呼叫同樣生效。
     private static readonly MethodInfo ReloadContentIntMethod = typeof(ModContentPack).GetMethod(
         "ReloadContentInt",
-        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); // NOSONAR S3011: 遊戲 DLL 中該方法為 private，經由反射呼叫是唯一可行的整合方式
+        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
     // 經由反射呼叫 ModContentPack.ReloadContentInt(false)，繞過 private 的可見性驗證。
     private static void InvokeReloadContentInt(ModContentPack mod)
