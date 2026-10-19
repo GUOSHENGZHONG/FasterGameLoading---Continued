@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using DevTools.Benchmarking;
 using HarmonyLib;
 using LudeonTK;

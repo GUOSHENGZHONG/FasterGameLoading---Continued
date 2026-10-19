@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 #pragma warning disable MA0148, MA0002, MA0003, MA0016, MA0051, MA0106, MA0134, MA0032, MA0039, S3776, S3267, S3398, S108, S2486, S2701
 using System.IO;
 using System.Reflection;
