@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <!-- MTP 讓測試組件以自己的 TFM runtime 執行（VSTest 則由 testhost 執行，會自動捲動到
+         最新主要版本）。Harmony 2.4.2 的 MonoMod 在 .NET 9 上需要 System.Runtime 10.0.0.0，
+         會拋出 FileNotFoundException 而使修補失敗，因此固定捲動到最新主要版本。 -->
+    <RollForward>LatestMajor</RollForward>
     <RootNamespace>FasterGameLoading.Tests</RootNamespace>
     <AssemblyName>FasterGameLoading.Tests</AssemblyName>
     <LangVersion>latest</LangVersion>
