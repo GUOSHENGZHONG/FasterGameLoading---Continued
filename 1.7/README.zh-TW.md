@@ -159,9 +159,9 @@ dotnet build 1.7/Source/FasterGameLoading.csproj -c Release
 測試使用 .NET 10 上的 NUnit，改以 Microsoft.Testing.Platform 執行：
 
 ```bash
-dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj
+dotnet test --project 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj
 ```
 
-`global.json` 會啟用 Microsoft.Testing.Platform 的 `dotnet test` 體驗，請在儲存庫根目錄或 `1.7/Source/` 執行上述指令。這個平台是必要的：它會先執行測試組件的進入點再進行探索，`TestSetup` 才能在探索前註冊組件解析器，於執行期載入遊戲的 `Assembly-CSharp.dll` 與 `UnityStubs.dll`。VSTest 路徑則是在任何測試程式碼執行前就直接反射測試組件，找不到測試並回報「NUnit couldn't find any tests」。`Krafs.Rimworld.Ref` 套件只提供參考組件，遊戲組件並不會出現在測試輸出目錄中，因此必須在執行期從本機 RimWorld 安裝目錄解析載入。RimWorld 1.6 與 1.7 共用同一個 Steam 安裝目錄，兩者無法同時存在，因此 1.7 的測試需要遊戲停留在 1.7。組件解析器會比對 `Assembly-CSharp.dll` 的版本，拒絕載入另一個 RimWorld 版本的組件，測試不會在錯誤的遊戲版本上靜默通過。
+`global.json` 會啟用 Microsoft.Testing.Platform 的 `dotnet test` 體驗。請在儲存庫根目錄執行上述指令；.NET 10 SDK 必須使用 `--project` 指定專案。這個平台會先執行測試組件的進入點再進行探索，`TestSetup` 才能在探索前註冊組件解析器，於執行期載入遊戲的 `Assembly-CSharp.dll` 與 `UnityStubs.dll`。VSTest 路徑則是在任何測試程式碼執行前就直接反射測試組件，找不到測試並回報「NUnit couldn't find any tests」。`Krafs.Rimworld.Ref` 套件只提供參考組件，遊戲組件並不會出現在測試輸出目錄中，因此必須在執行期從本機 RimWorld 安裝目錄解析載入。RimWorld 1.6 與 1.7 共用同一個 Steam 安裝目錄，兩者無法同時存在，因此 1.7 的測試需要遊戲停留在 1.7。組件解析器會比對 `Assembly-CSharp.dll` 的版本，拒絕載入另一個 RimWorld 版本的組件，測試不會在錯誤的遊戲版本上靜默通過。
 
 遊戲內整合測試與型別查詢 benchmark 使用固定版本的 DevTools，獨立建置為只供開發的附屬模組；建置方式、Test Explorer／Smoke Test 執行流程及各測試情境見[遊戲內測試說明](Source/FasterGameLoading.InGameTests/README.md)。正式版 `1.7/Assemblies/` 不需要 DevTools，NUnit 測試仍使用上面的 `dotnet test` 指令。RimWorld 1.6 不整合 DevTools。

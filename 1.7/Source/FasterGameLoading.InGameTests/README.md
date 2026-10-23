@@ -5,7 +5,7 @@
 原有 `FasterGameLoading.Tests` 是另一個 .NET 10 + NUnit 專案，驗證可在不啟動遊戲的環境執行的邏輯；請繼續用：
 
 ```powershell
-dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj
+dotnet test --project 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj
 ```
 
 ## 準備與建置
@@ -59,7 +59,7 @@ DevTools 的 **Benchmark** 頁提供 `FGL type lookup`，比較遊戲內重複�
 此頁也提供 GenTypes 完整名稱加命名空間提示的快取／reverse-patch 原版對照。另可在 NUnit 專案手動執行 `TypeLookupBenchmarks` 的兩個 Explicit 基準，量測 Prefix／Postfix 的執行緒配置量與已列舉組件的全名預熱；平常測試不執行它們：
 
 ```powershell
-dotnet test 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj -c Release --filter FullyQualifiedName~TypeLookupBenchmarks --output Detailed
+dotnet test --project 1.7/Source/FasterGameLoading.Tests/FasterGameLoading.Tests.csproj -c Release --filter FullyQualifiedName~TypeLookupBenchmarks --output Detailed
 ```
 
 這兩個基準不包含首次組件列舉、Harmony 包裝或完整遊戲啟動，不能直接換算成遊戲加速百分比。
