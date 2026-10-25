@@ -121,7 +121,7 @@ Compatibility handling exists for:
 - [ChezhouLib](https://steamcommunity.com/sharedfiles/filedetails/?id=3595247479)
 - [Hyperdrive](https://github.com/vopaga/rimworld-hyperdrive)
 
-This handling is shared with the 1.6 build; whether each of these mods has a RimWorld 1.7 version, and how it behaves there, has not been checked yet.
+Most of this handling is shared with the 1.6 build; the HAR graphics hook also waits for Def loading to finish on 1.7. Availability and behavior on 1.7 have not been checked for every mod listed here.
 
 Important behavior:
 
@@ -131,7 +131,7 @@ Important behavior:
 - [Image Opt](https://steamcommunity.com/sharedfiles/filedetails/?id=3543873568) compatibility is no longer maintained. When Faster Game Loading and Image Opt are enabled together, mods that depend on [Ancot Library](https://steamcommunity.com/sharedfiles/filedetails/?id=2988801276) may encounter graphical loading errors, missing textures, or black textures under some loading conditions. Using both mods together is not recommended; use [Image Opt fork](https://steamcommunity.com/sharedfiles/filedetails/?id=3781013698) instead.
 - Existing Image Opt safeguards, such as downscaled-texture bypass and invalid `.dds` / `.dds.zstd` cache cleanup, do not guarantee compatibility.
 - [Image Opt fork](https://steamcommunity.com/sharedfiles/filedetails/?id=3781013698) is an alternative to Image Opt, patched by its author for compatibility with Faster Game Loading. Load it after Faster Game Loading.
-- [Humanoid Alien Races](https://github.com/erdelf/AlienRaces) counts each race's texture variants as soon as its own textures are loaded. Faster Game Loading holds that count until all mod content has loaded, so variants from race mods that load later are not missed. With this in place, HAR and the race mods that depend on it are loaded early and have their XML parsed in parallel like other mods. If the hook cannot be found or patched, they are excluded from both again.
+- [Humanoid Alien Races](https://github.com/erdelf/AlienRaces) scans queued races' texture variants once its own textures are loaded. Faster Game Loading holds that scan until Def reference resolution and all mod content loading have finished. This prevents the scan from enumerating HAR's pending-race set while background reference resolution is still adding races, which can cause `Collection was modified`, and keeps variants from later-loaded race mods from being missed. HAR and its dependent race mods can still load content early and parse XML in parallel. If the hook cannot be found or patched, they are excluded from both again.
 - HAR (including its dev build) and Ancot-related race mods are not downscaled, to reduce bodyAddon, hair, ear, and multi-mask texture issues. The same applies to [Pumpkin Library](https://steamcommunity.com/sharedfiles/filedetails/?id=3790461769) DDS texture packs that replace those mods' textures, as listed in Pumpkin Library's `TextureOverrideSettings.xml`. AyaTweaks and Ayameduki mods skip early loading and parallel XML parsing.
 - With [ChezhouLib](https://steamcommunity.com/sharedfiles/filedetails/?id=3595247479), Faster Game Loading's guard against loading the same asset bundles twice runs before ChezhouLib's asset bundle loader.
 

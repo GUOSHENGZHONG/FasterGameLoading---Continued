@@ -10,7 +10,8 @@ namespace FasterGameLoading;
 /// HAR 在 ThingDef_AlienRace.ResolveReferences 把 AlienPartGenerator.LoadGraphicsHook 掛上 Application.onBeforeRender，
 /// 只要 HAR 自己的貼圖已載入，下一幀就以 ContentFinder 計算所有種族部件的貼圖變體數量。
 /// 原版在同一幀內載入所有 mod 的貼圖，FGL 的提早載入則分幀進行：HAR 先載入時，尚未載入的種族 mod 變體數會被算成 0，貼圖遺失。
-/// 這裡讓 LoadGraphicsHook 等到所有執行中 mod 的內容都載入後才執行，與原版的先後順序相同，
+/// 這裡讓 LoadGraphicsHook 等到本輪 Def 參照解析與所有執行中 mod 的內容載入完成後才執行，
+/// 避免背景 ResolveReferences 還在加入 graphicsQueue 時，主執行緒已開始列舉同一個 HashSet。
 /// HAR 與依賴它的 mod 因此可以照常提早載入、平行解析 XML。
 /// </summary>
 internal static class AlienRaceGraphicsHookGate
@@ -53,10 +54,13 @@ internal static class AlienRaceGraphicsHookGate
         }
     }
 
-    // 還有執行中 mod 的內容未載入時略過原方法；HAR 仍訂閱 onBeforeRender，下一幀會再呼叫。
+    // Def 或 mod 內容尚未載完時略過原方法；HAR 仍訂閱 onBeforeRender，下一幀會再呼叫。
     internal static bool Prefix()
     {
         if (released) return true;
+        // 提早載入能先載完所有紋理，但 HAR 的 ResolveReferences 此時仍可能修改 graphicsQueue。
+        // Loaded 要等 DoPlayLoad 完整返回才為 true，不能只用 loadedMods 判斷是否能安全列舉。
+        if (!PlayDataLoader.Loaded) return false;
         foreach (var mod in LoadedModManager.RunningMods)
         {
             if (!ModContentPack_ReloadContentInt_Patch.loadedMods.Contains(mod)) return false;

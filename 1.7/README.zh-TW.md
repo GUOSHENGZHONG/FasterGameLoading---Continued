@@ -121,7 +121,7 @@ graph TD
 - [ChezhouLib](https://steamcommunity.com/sharedfiles/filedetails/?id=3595247479)
 - [Hyperdrive](https://github.com/vopaga/rimworld-hyperdrive)
 
-這些處理與 1.6 版共用；各模組是否有 RimWorld 1.7 版本、在 1.7 上的表現如何，尚未確認。
+大部分處理與 1.6 版共用；1.7 的 HAR 圖形掛鉤還會等待 Def 載入完成。尚未逐一確認清單中所有模組是否提供 1.7 版本，以及在 1.7 上的表現。
 
 重要行為：
 
@@ -131,7 +131,7 @@ graph TD
 - [Image Opt](https://steamcommunity.com/sharedfiles/filedetails/?id=3543873568) 的相容性已不再維護。同時啟用 Faster Game Loading 與 Image Opt 時，依賴 [Ancot Library](https://steamcommunity.com/sharedfiles/filedetails/?id=2988801276) 的模組在某些載入情況下可能出現圖形載入錯誤、紋理遺失或黑色紋理。不建議兩者同時使用，請改用 [Image Opt fork](https://steamcommunity.com/sharedfiles/filedetails/?id=3781013698)。
 - 既有的 Image Opt 防護措施（例如略過縮小紋理、清理無效的 `.dds` / `.dds.zstd` 快取）不保證相容。
 - [Image Opt fork](https://steamcommunity.com/sharedfiles/filedetails/?id=3781013698) 是 Image Opt 的替代品，作者已為相容 Faster Game Loading 做了修改。請把它放在 Faster Game Loading 之後載入。
-- [Humanoid Alien Races](https://github.com/erdelf/AlienRaces) 會在每個種族自己的紋理載入後立即統計該種族的紋理變體。Faster Game Loading 會把這次統計延到所有模組內容載入完成後，避免漏掉之後才載入的種族模組的變體。有了這項處理，HAR 與依賴它的種族模組也能像其他模組一樣提早載入並平行解析 XML。若找不到或無法補丁這個掛鉤，它們會再次被排除在這兩項功能之外。
+- [Humanoid Alien Races](https://github.com/erdelf/AlienRaces) 會在自己的紋理載入後掃描佇列中種族的紋理變體。Faster Game Loading 會等 Def 參照解析與所有模組內容載入完成後才放行，避免背景解析仍在加入種族時列舉 HAR 的待處理集合，導致 `Collection was modified`，也避免漏掉之後才載入的種族模組的變體。HAR 與依賴它的種族模組仍能提早載入並平行解析 XML。若找不到或無法補丁這個掛鉤，它們會再次被排除在這兩項功能之外。
 - HAR（包括其開發版）與 Ancot 相關的種族模組不會被縮小紋理，以減少 bodyAddon、頭髮、耳朵與多遮罩紋理的問題。[Pumpkin Library](https://steamcommunity.com/sharedfiles/filedetails/?id=3790461769) 在 `TextureOverrideSettings.xml` 中列出、用來取代這些模組紋理的 DDS 紋理包也同樣處理。AyaTweaks 與 Ayameduki 系列模組不提早載入，也不平行解析 XML。
 - 搭配 [ChezhouLib](https://steamcommunity.com/sharedfiles/filedetails/?id=3595247479) 時，Faster Game Loading 防止重複載入同一組 asset bundle 的防護會在 ChezhouLib 的 asset bundle 載入器之前執行。
 

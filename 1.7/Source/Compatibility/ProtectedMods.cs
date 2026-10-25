@@ -127,7 +127,7 @@ public static class ProtectedMods
         if (string.IsNullOrEmpty(packageId)) return false;
         if (packageId.StartsWith("Ayameduki.", StringComparison.OrdinalIgnoreCase)) return true;
         if (packageId.StartsWith("WRK.", StringComparison.OrdinalIgnoreCase)) return true;
-        // HAR 的變體掃描已延後到所有內容載入完成，HAR 與其衍生不必再讓開。
+        // HAR 的變體掃描已延後到 Def 參照解析與所有內容載入完成，HAR 與其衍生不必再讓開。
         if (AlienRaceGraphicsHookGate.DefersGraphicsHook) return false;
         return ModDependencyReflection.IsAlienRaces(packageId) || ModDependencyReflection.DependsOnAlienRaces(metaData);
     }

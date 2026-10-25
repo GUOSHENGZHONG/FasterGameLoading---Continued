@@ -11,8 +11,10 @@ public class AlienRaceGraphicsHookGateTests
 {
     private static readonly FieldInfo releasedField = AccessTools.Field(typeof(AlienRaceGraphicsHookGate), "released");
     private static readonly FieldInfo runningModsField = AccessTools.Field(typeof(LoadedModManager), "runningMods");
+    private static readonly FieldInfo playDataLoadedField = AccessTools.Field(typeof(PlayDataLoader), "loadedInt");
 
     private object originalRunningMods;
+    private bool originalPlayDataLoaded;
     private readonly List<ModContentPack> addedToLoadedMods = new();
 
     // 只重設閘門自己的狀態，不 Raise 全域生命週期事件，避免清掉其他類別的快取。
@@ -21,6 +23,8 @@ public class AlienRaceGraphicsHookGateTests
     {
         releasedField.SetValue(null, false);
         originalRunningMods = runningModsField.GetValue(null);
+        originalPlayDataLoaded = (bool)playDataLoadedField.GetValue(null);
+        playDataLoadedField.SetValue(null, true);
     }
 
     [TearDown]
@@ -28,6 +32,7 @@ public class AlienRaceGraphicsHookGateTests
     {
         releasedField.SetValue(null, false);
         runningModsField.SetValue(null, originalRunningMods);
+        playDataLoadedField.SetValue(null, originalPlayDataLoaded);
         foreach (var mod in addedToLoadedMods)
         {
             ModContentPack_ReloadContentInt_Patch.loadedMods.Remove(mod);
@@ -57,6 +62,32 @@ public class AlienRaceGraphicsHookGateTests
 
         MarkLoaded(raceMod);
         Assert.That(AlienRaceGraphicsHookGate.Prefix(), Is.True);
+    }
+
+    [Test]
+    public void Prefix_BlocksHookWhileDefsAreStillResolvingEvenIfAllContentLoaded()
+    {
+        var har = CreateMod();
+        var raceMod = CreateMod();
+        runningModsField.SetValue(null, new List<ModContentPack> { har, raceMod });
+        MarkLoaded(har);
+        MarkLoaded(raceMod);
+        playDataLoadedField.SetValue(null, false);
+
+        // 模擬紋理已提早載完，但背景 ResolveReferences 還會加入 HAR graphicsQueue。
+        Assert.That(AlienRaceGraphicsHookGate.Prefix(), Is.False);
+
+        playDataLoadedField.SetValue(null, true);
+        Assert.That(AlienRaceGraphicsHookGate.Prefix(), Is.True);
+    }
+
+    [Test]
+    public void Prefix_DoesNotReleaseBeforeRunningModsAreRegistered()
+    {
+        runningModsField.SetValue(null, new List<ModContentPack>());
+        playDataLoadedField.SetValue(null, false);
+
+        Assert.That(AlienRaceGraphicsHookGate.Prefix(), Is.False);
     }
 
     [Test]
