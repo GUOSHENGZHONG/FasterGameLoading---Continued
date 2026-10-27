@@ -157,6 +157,54 @@ public class ThingDef_PostLoad_PatchTests
     }
 
     [Test]
+    public void ExecuteDelayed_SnapshotsGraphicBeforeStaticConstructorsRewriteIt()
+    {
+        var def = CreateMockThingDef("RewrittenByStaticCtor");
+        def.uiIconPath = null;
+        var data = (GraphicData)FormatterServices.GetUninitializedObject(typeof(GraphicData));
+        data.texPath = "Things/Item/Archotech";
+        data.graphicClass = typeof(Graphic_Single);
+        def.graphicData = data;
+
+        bool? insertionAllowed = null;
+        ThingDef_PostLoad_Patch.ExecuteDelayed(() => insertionAllowed = DeferredGraphicAtlasSkip.Prefix(), def);
+
+        // 原版回呼在 CallAll 之前執行，快照就落在這一步（延遲佇列還沒開始跑）。
+        capturedExecuteWhenFinishedAction();
+
+        // 其他 Mod 的靜態建構子（StaticConstructorOnStartup）隨後改寫圖形。
+        data.texPath = "Things/Item/ArchotechFrame";
+
+        var drain = delayedActions.LoadDeferredGraphicsCoroutine(new List<ThingDef>());
+        while (drain.MoveNext()) { }
+
+        Assert.That(insertionAllowed, Is.False, "改寫後的圖形不得插入靜態圖集。");
+    }
+
+    [Test]
+    public void ExecuteDelayed_WhenShaderTypeResolvedAfterSnapshot_IsNotTreatedAsRewrite()
+    {
+        var def = CreateMockThingDef("CrossReferenceDef");
+        def.uiIconPath = null;
+        var data = (GraphicData)FormatterServices.GetUninitializedObject(typeof(GraphicData));
+        data.texPath = "Things/Item/Part";
+        data.graphicClass = typeof(Graphic_Single);
+        def.graphicData = data;
+
+        bool? insertionAllowed = null;
+        ThingDef_PostLoad_Patch.ExecuteDelayed(() => insertionAllowed = DeferredGraphicAtlasSkip.Prefix(), def);
+
+        // 快照當下 shaderType 仍是 null（XML 未指定）；之後才由原版回呼補上 Cutout 或由其他 Mod 設定。
+        capturedExecuteWhenFinishedAction();
+        data.shaderType = (ShaderTypeDef)FormatterServices.GetUninitializedObject(typeof(ShaderTypeDef));
+
+        var drain = delayedActions.LoadDeferredGraphicsCoroutine(new List<ThingDef>());
+        while (drain.MoveNext()) { }
+
+        Assert.That(insertionAllowed, Is.True, "快照時為 null 的 shaderType 之後才有值，不是其他 Mod 的改寫。");
+    }
+
+    [Test]
     public void ExecuteDelayed_DecidesOnlyAfterCrossReferencesAreResolved()
     {
         // PostLoad 當下交叉參照尚未解析，designationCategory 仍是 null。

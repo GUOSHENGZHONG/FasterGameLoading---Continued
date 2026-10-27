@@ -47,18 +47,24 @@ public static class ThingDef_PostLoad_Patch
     }
 
     /// <summary>
-    /// 仍在原本的時機以 ExecuteWhenFinished 排程，等回呼執行時才以 ShouldBeLoadedImmediately
-    /// 決定立即載入或排入延遲佇列：PostLoad 當下 Def 參照（designationCategory、thingCategories、
-    /// orderedTakeGroup）尚未解析，這時判斷會讓家具等分類條件永遠不成立。
+    /// 仍在原本的時機以 ExecuteWhenFinished 排程，等回呼執行時才快照圖形輸入，並以
+    /// ShouldBeLoadedImmediately 決定立即載入或排入延遲佇列。
+    ///
+    /// 回呼執行時機正好是快照的正確位置：Def 交互參照（designationCategory、thingCategories、
+    /// orderedTakeGroup、graphicData.shaderType）已經解析完成，而其他 Mod 的
+    /// StaticConstructorOnStartup 靜態建構子還沒開始改寫圖形。若提前在 PostLoad 擷取，
+    /// 這些參照仍是 null，會被誤判成改寫；若晚到延遲佇列才擷取，看到的已經是改寫後的內容。
     /// </summary>
     public static void ExecuteDelayed(Action action, ThingDef def)
-    {
-        LongEventHandler.ExecuteWhenFinished(() => DeferOrRun(def, action, static (delayedActions, d, a) => delayedActions.EnqueueGraphic(d, a)));
-    }
+        => LongEventHandler.ExecuteWhenFinished(() => DeferOrRun(
+            def,
+            action,
+            static (delayedActions, d, a) => delayedActions.EnqueueGraphic(d, a, GraphicSnapshot.Capture(d))));
 
     /// <summary>
     /// 圖形／圖示延遲的共用後端：Def 參照解析完畢後才決定去向。
     /// 只有 ThingDef 且 ShouldBeLoadedImmediately 才立即執行，其餘（一律含 BuildableDef）排入延遲佇列。
+    /// 圖形的 enqueue 委派會在排入當下順帶擷取圖形快照（見 <see cref="GraphicSnapshot"/>）。
     /// </summary>
     internal static void DeferOrRun<TDef>(TDef def, Action action, Action<DelayedActions, TDef, Action> enqueue)
     {

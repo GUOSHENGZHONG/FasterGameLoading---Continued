@@ -72,6 +72,9 @@ public class DelayedActionsTests
         return def;
     }
 
+    // 佇列項目要帶排入當下的圖形快照；這裡的假 Def 沒有 GraphicData，快照內容為空（永不判定為改寫）。
+    private void QueueGraphic(ThingDef def, Action action) => delayedActions.EnqueueGraphic(def, action, GraphicSnapshot.Capture(def));
+
     private void RunToCompletion() => RunLikeUnity(delayedActions.PerformActions());
 
     // 模擬 Unity 協程：yield 出的 IEnumerator 視為子協程，先跑完再繼續外層。
@@ -96,8 +99,8 @@ public class DelayedActionsTests
     public void DeferredGraphics_RunInEnqueueOrder()
     {
         var order = new List<string>();
-        delayedActions.EnqueueGraphic(CreateMockThingDef("First"), () => order.Add("First"));
-        delayedActions.EnqueueGraphic(CreateMockThingDef("Second"), () => order.Add("Second"));
+        QueueGraphic(CreateMockThingDef("First"), () => order.Add("First"));
+        QueueGraphic(CreateMockThingDef("Second"), () => order.Add("Second"));
 
         var drain = delayedActions.LoadDeferredGraphicsCoroutine(new List<ThingDef>());
         while (drain.MoveNext()) { }
@@ -112,7 +115,7 @@ public class DelayedActionsTests
         RunToCompletion();
         Assert.That(delayedActions.Phase, Is.EqualTo(DeferredPhase.Completed));
 
-        delayedActions.EnqueueGraphic(CreateMockThingDef("TestClear"), () => { });
+        QueueGraphic(CreateMockThingDef("TestClear"), () => { });
         delayedActions.EnqueueIcon(CreateMockThingDef("IconClear"), () => { });
         delayedActions.EnqueueSubSound((SubSoundDef)FormatterServices.GetUninitializedObject(typeof(SubSoundDef)), () => { });
 
@@ -300,7 +303,7 @@ public class DelayedActionsTests
         CaptureSettings(delay: true);
         FasterGameLoadingSettings.DelayGraphicLoading = false;
         bool graphicLoaded = false;
-        delayedActions.EnqueueGraphic(CreateMockThingDef("QueuedAfterToggle"), () => graphicLoaded = true);
+        QueueGraphic(CreateMockThingDef("QueuedAfterToggle"), () => graphicLoaded = true);
 
         RunToCompletion();
 

@@ -57,7 +57,7 @@ graph TD
 
 預設關閉：
 
-- **延遲圖形和圖示載入**：把部分非必要的圖形與圖示工作移到啟動回呼之後分批處理；它在顯示主選單時就開始，不必等待讀取存檔。略過啟動圖集烘焙時，仍會在主選單前完成 RimWorld 1.7 延遲的紋理上傳；已排入圖集的來源紋理維持未駐留，等需要時才載入。佇列中的圖形與圖示完成後，再執行 RimWorld 原本的圖集烘焙、壓縮、磁碟快取與來源紋理釋放。家具等必要類別會在 Def 參照解析後才決定。RimWorld 的 `ResolveIcon` 會在延後的圖集烘焙之前處理圖示。此選項繼續預設關閉：主選單可以提早出現，但延後工作可能造成選單後的長幀與記憶體用量增加。變更後需重新啟動遊戲才生效。
+- **延遲圖形和圖示載入**：把部分非必要的圖形與圖示工作移到啟動回呼之後分批處理；它在顯示主選單時就開始，不必等待讀取存檔。略過啟動圖集烘焙時，仍會在主選單前完成 RimWorld 1.7 延遲的紋理上傳；已排入圖集的來源紋理維持未駐留，等需要時才載入。佇列中的圖形與圖示完成後，再執行 RimWorld 原本的圖集烘焙、壓縮、磁碟快取與來源紋理釋放。家具等必要類別會在 Def 參照解析後才決定。RimWorld 的 `ResolveIcon` 會在延後的圖集烘焙之前處理圖示。若某個 Def 的圖形在排入佇列後被其他模組改寫（例如 Bionic Icons 在靜態建構子把部位圖形換成共用外框加各部位遮罩），延後流程仍會建立新圖形，但不把它插入靜態圖集，與原版一致：改寫後的圖形在原版本來就沒進圖集，這也避免 RimWorld 的「同一張貼圖搭配兩個不同遮罩」圖集錯誤。此選項繼續預設關閉：主選單可以提早出現，但延後工作可能造成選單後的長幀與記憶體用量增加。變更後需重新啟動遊戲才生效。
 - **啟用詳細日誌**：輸出除錯訊息。若遊戲啟動時就已開啟，第一次啟動後還會記錄主選單出現後，延後的視覺內容與全部延後工作各自多久後完成（主選單前就完成的工作記為 +0.0 s），例如 `[FasterGameLoading] Startup timing after the main menu appeared: visuals ready +0.6 s, all deferred work done +3.0 s.` 也會記錄音效預熱解碼了多少個原版音檔、花了多久，以及失敗幾個。不包含到主選單為止的載入時間。遊戲不經主選單直接進入地圖時不會記錄，切換語言也不會再記錄一次。
 
 手動工具：
@@ -133,6 +133,7 @@ graph TD
 - [Image Opt fork](https://steamcommunity.com/sharedfiles/filedetails/?id=3781013698) 是 Image Opt 的替代品，作者已為相容 Faster Game Loading 做了修改。請把它放在 Faster Game Loading 之後載入。
 - [Humanoid Alien Races](https://github.com/erdelf/AlienRaces) 會在自己的紋理載入後掃描佇列中種族的紋理變體。Faster Game Loading 會等 Def 參照解析與所有模組內容載入完成後才放行，避免背景解析仍在加入種族時列舉 HAR 的待處理集合，導致 `Collection was modified`，也避免漏掉之後才載入的種族模組的變體。HAR 與依賴它的種族模組仍能提早載入並平行解析 XML。若找不到或無法補丁這個掛鉤，它們會再次被排除在這兩項功能之外。
 - HAR（包括其開發版）與 Ancot 相關的種族模組不會被縮小紋理，以減少 bodyAddon、頭髮、耳朵與多遮罩紋理的問題。[Pumpkin Library](https://steamcommunity.com/sharedfiles/filedetails/?id=3790461769) 在 `TextureOverrideSettings.xml` 中列出、用來取代這些模組紋理的 DDS 紋理包也同樣處理。AyaTweaks 與 Ayameduki 系列模組不提早載入，也不平行解析 XML。
+- 在靜態建構子改寫 `GraphicData` 或 `Def.graphic` 的模組（例如 [Bionic Icons](https://steamcommunity.com/sharedfiles/filedetails/?id=1677616980)）可搭配 **延遲圖形和圖示載入** 使用：排入佇列後才被改寫的圖形仍會建立，但不會插入靜態圖集，與原版一致，也避免 RimWorld 的「同一張貼圖搭配兩個不同遮罩」圖集錯誤。改寫是透過 `texPath`、`maskPath`、`graphicClass`、`shaderType` 與 `Def.graphic` 判斷；只以反射替換私有 `cachedGraphic`、其餘欄位不動的模組不在涵蓋範圍。
 - 搭配 [ChezhouLib](https://steamcommunity.com/sharedfiles/filedetails/?id=3595247479) 時，Faster Game Loading 防止重複載入同一組 asset bundle 的防護會在 ChezhouLib 的 asset bundle 載入器之前執行。
 
 ## 建議設定

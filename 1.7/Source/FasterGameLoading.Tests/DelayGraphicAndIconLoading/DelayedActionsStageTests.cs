@@ -40,6 +40,9 @@ public class DelayedActionsStageTests
         return def;
     }
 
+    // 佇列項目要帶排入當下的圖形快照；這裡的假 Def 沒有 GraphicData，快照內容為空（永不判定為改寫）。
+    private void QueueGraphic(ThingDef def, Action action) => delayedActions.EnqueueGraphic(def, action, GraphicSnapshot.Capture(def));
+
     [OneTimeSetUp]
 #pragma warning disable MA0051 // 需依序初始化多個 Harmony mock patch，拆分成多個方法會降低可讀性
     public void OneTimeSetUp()
@@ -116,8 +119,8 @@ public class DelayedActionsStageTests
         bool act1Executed = false;
         bool act2Executed = false;
 
-        delayedActions.EnqueueGraphic(def1, () => act1Executed = true);
-        delayedActions.EnqueueGraphic(def2, () => act2Executed = true);
+        QueueGraphic(def1, () => act1Executed = true);
+        QueueGraphic(def2, () => act2Executed = true);
 
         var loadedDefs = new List<ThingDef>();
         var coroutine = delayedActions.LoadDeferredGraphicsCoroutine(loadedDefs);
@@ -131,6 +134,57 @@ public class DelayedActionsStageTests
         Assert.That(delayedActions.GraphicsToLoadCount, Is.EqualTo(0));
     }
 
+    // 建一個帶 GraphicData 的假 Def；快照只讀欄位，不會真的載入貼圖。
+    private static GraphicData CreateGraphicData(string texPath)
+    {
+        var data = (GraphicData)FormatterServices.GetUninitializedObject(typeof(GraphicData));
+        data.texPath = texPath;
+        data.graphicClass = typeof(Graphic_Single);
+        return data;
+    }
+
+    [Test]
+    public void LoadDeferredGraphicsCoroutine_WhenGraphicChangedAfterEnqueue_SkipsStaticAtlasInsertion()
+    {
+        var def = CreateMockThingDef("ChangedAfterEnqueue");
+        def.graphicData = CreateGraphicData("Things/Item/Archotech");
+
+        bool actionExecuted = false;
+        bool? insertionAllowedInsideAction = null;
+        QueueGraphic(def, () =>
+        {
+            actionExecuted = true;
+            insertionAllowedInsideAction = DeferredGraphicAtlasSkip.Prefix();
+        });
+
+        // 模擬 Bionic Icons 之類的 Mod 在靜態建構子改寫圖形（共用外框貼圖、部位圖示當遮罩）。
+        def.graphicData.texPath = "Things/Item/ArchotechFrame";
+
+        var loadedDefs = new List<ThingDef>();
+        var coroutine = delayedActions.LoadDeferredGraphicsCoroutine(loadedDefs);
+        while (coroutine.MoveNext()) { }
+
+        Assert.That(actionExecuted, Is.True, "圖形仍要建立，只是不插入靜態圖集。");
+        Assert.That(insertionAllowedInsideAction, Is.False, "被改寫的圖形不得插入靜態圖集。");
+        Assert.That(loadedDefs, Contains.Item(def), "已載入圖形的 def 仍要重繪地圖網格。");
+        Assert.That(DeferredGraphicAtlasSkip.Prefix(), Is.True, "動作結束後必須還原插入。");
+    }
+
+    [Test]
+    public void LoadDeferredGraphicsCoroutine_WhenGraphicUnchanged_AllowsStaticAtlasInsertion()
+    {
+        var def = CreateMockThingDef("Unchanged");
+        def.graphicData = CreateGraphicData("Things/Item/Part");
+
+        bool? insertionAllowedInsideAction = null;
+        QueueGraphic(def, () => insertionAllowedInsideAction = DeferredGraphicAtlasSkip.Prefix());
+
+        var coroutine = delayedActions.LoadDeferredGraphicsCoroutine(new List<ThingDef>());
+        while (coroutine.MoveNext()) { }
+
+        Assert.That(insertionAllowedInsideAction, Is.True, "未被改寫的圖形要照原版插入靜態圖集。");
+    }
+
     [Test]
     public void DeferredIconAction_StillRunsAfterDeferredGraphicLoads()
     {
@@ -138,7 +192,7 @@ public class DelayedActionsStageTests
         def.uiIcon = mockBadTex;
         def.uiIconPath = "Things/Item/TestIcon";
         bool iconActionExecuted = false;
-        delayedActions.EnqueueGraphic(def, () => { });
+        QueueGraphic(def, () => { });
         delayedActions.EnqueueIcon(def, () => iconActionExecuted = true);
 
         var graphics = delayedActions.LoadDeferredGraphicsCoroutine(new List<ThingDef>());
@@ -160,9 +214,9 @@ public class DelayedActionsStageTests
         bool act1Executed = false;
         bool act3Executed = false;
 
-        delayedActions.EnqueueGraphic(def1, () => act1Executed = true);
-        delayedActions.EnqueueGraphic(def2, () => throw new InvalidOperationException("Simulated load error"));
-        delayedActions.EnqueueGraphic(def3, () => act3Executed = true);
+        QueueGraphic(def1, () => act1Executed = true);
+        QueueGraphic(def2, () => throw new InvalidOperationException("Simulated load error"));
+        QueueGraphic(def3, () => act3Executed = true);
 
         var loadedDefs = new List<ThingDef>();
         var coroutine = delayedActions.LoadDeferredGraphicsCoroutine(loadedDefs);
@@ -190,7 +244,7 @@ public class DelayedActionsStageTests
         var plantField = AccessTools.Field(typeof(ThingDef), "plant");
         plantField?.SetValue(defSuccess, plantPropObj);
 
-        delayedActions.EnqueueGraphic(defSuccess, () => { });
+        QueueGraphic(defSuccess, () => { });
 
         var loadedDefs = new List<ThingDef>();
         var coroutine = delayedActions.LoadDeferredGraphicsCoroutine(loadedDefs);
@@ -204,7 +258,7 @@ public class DelayedActionsStageTests
         var defFailure = CreateMockThingDef("DefPlantFailure");
         plantField?.SetValue(defFailure, plantPropObj);
 
-        delayedActions.EnqueueGraphic(defFailure, () => throw new InvalidOperationException("Failed"));
+        QueueGraphic(defFailure, () => throw new InvalidOperationException("Failed"));
         coroutine = delayedActions.LoadDeferredGraphicsCoroutine(loadedDefs);
 
         while (coroutine.MoveNext()) { }
@@ -309,8 +363,8 @@ public class DelayedActionsStageTests
         var def1 = CreateMockThingDef("TestDef1");
         var def2 = CreateMockThingDef("TestDef2");
 
-        delayedActions.EnqueueGraphic(def1, () => { });
-        delayedActions.EnqueueGraphic(def2, () => { });
+        QueueGraphic(def1, () => { });
+        QueueGraphic(def2, () => { });
 
         var getter = AccessTools.PropertyGetter(typeof(DelayedActions), nameof(DelayedActions.IsOverBudget));
         var patch = new HarmonyMethod(AccessTools.Method(typeof(DelayedActionsStageTests), nameof(MockOverBudgetTrue)));
@@ -364,7 +418,7 @@ public class DelayedActionsStageTests
     public void LoadDeferredGraphicsCoroutine_WhenNotInMainThread_YieldsAndContinues()
     {
         var def = CreateMockThingDef("TestDef");
-        delayedActions.EnqueueGraphic(def, () => { });
+        QueueGraphic(def, () => { });
 
         mockIsInMainThread = false;
         TestSetup.IsInMainThreadOverride = () => false;
